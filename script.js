@@ -47,8 +47,12 @@ function randInt(min, max) {
 
 // ===== 生成随机位置（保证在屏幕内）=====
 function randomPosition(w, h) {
-  const maxX = window.innerWidth - w - 10;
-  const maxY = window.innerHeight - h - 50; // 留出任务栏
+  // 用桌面容器的实际尺寸（旋转后仍准确），而不是 window 视口
+  const desktop = document.getElementById("desktop");
+  const areaW = desktop ? desktop.clientWidth : window.innerWidth;
+  const areaH = desktop ? desktop.clientHeight : window.innerHeight;
+  const maxX = areaW - w - 10;
+  const maxY = areaH - h - 50; // 留出任务栏
   const x = Math.max(10, randInt(10, Math.max(10, maxX)));
   const y = Math.max(10, randInt(10, Math.max(10, maxY)));
   return { x, y };
@@ -62,46 +66,57 @@ function createAdPopup() {
   const title = AD_TITLES[idx % AD_TITLES.length];
   const imgSrc = AD_IMAGES[randInt(0, AD_IMAGES.length - 1)];
 
-  // 先加载图片，拿到原始尺寸后按比例计算弹窗大小
+  // 先用默认尺寸立即创建弹窗（点击立刻有反馈，不卡）
+  let w = MAX_W;
+  let h = Math.round(MAX_W * 0.75);
+  const { x, y } = randomPosition(w, h);
+
+  const popup = document.createElement("div");
+  popup.className = "ad-popup";
+  popup.style.width = w + "px";
+  popup.style.height = h + "px";
+  popup.style.left = x + "px";
+  popup.style.top = y + "px";
+
+  popup.innerHTML = `
+    <span class="ad-close" title="关闭">✕</span>
+    <div class="ad-body"></div>
+  `;
+
+  const body = popup.querySelector(".ad-body");
+
+  // 关闭按钮：关不掉，反而跳到别的位置
+  const closeBtn = popup.querySelector(".ad-close");
+  closeBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    movePopup(popup);
+  });
+
+  popupLayer.appendChild(popup);
+  popupCount++;
+
+  // 图片加载完成后，按真实比例调整弹窗尺寸并填入图片
   const img = new Image();
   img.onload = () => {
     const ratio = img.naturalWidth / img.naturalHeight;
-    let w = MAX_W;
-    let h = w / ratio;
-    if (h > MAX_H) {
-      h = MAX_H;
-      w = h * ratio;
+    let nw = MAX_W;
+    let nh = nw / ratio;
+    if (nh > MAX_H) {
+      nh = MAX_H;
+      nw = nh * ratio;
     }
-    w = Math.round(w);
-    h = Math.round(h);
+    nw = Math.round(nw);
+    nh = Math.round(nh);
 
-    const { x, y } = randomPosition(w, h);
+    // 重新定位，避免尺寸变化后跑出屏幕
+    const pos = randomPosition(nw, nh);
+    popup.style.width = nw + "px";
+    popup.style.height = nh + "px";
+    popup.style.left = pos.x + "px";
+    popup.style.top = pos.y + "px";
 
-    const popup = document.createElement("div");
-    popup.className = "ad-popup";
-    popup.style.width = w + "px";
-    popup.style.height = h + "px";
-    popup.style.left = x + "px";
-    popup.style.top = y + "px";
-
-    popup.innerHTML = `
-      <span class="ad-close" title="关闭">✕</span>
-      <div class="ad-body"></div>
-    `;
-
-    const body = popup.querySelector(".ad-body");
     img.alt = title;
     body.appendChild(img);
-
-    // 关闭按钮：关不掉，反而跳到别的位置
-    const closeBtn = popup.querySelector(".ad-close");
-    closeBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      movePopup(popup, w, h);
-    });
-
-    popupLayer.appendChild(popup);
-    popupCount++;
   };
   img.onerror = () => {
     console.warn("广告图片加载失败：", imgSrc);
@@ -110,7 +125,10 @@ function createAdPopup() {
 }
 
 // ===== 把弹窗移动到新位置 =====
-function movePopup(popup, w, h) {
+function movePopup(popup) {
+  // 用弹窗当前实际尺寸，避免图片加载后尺寸变化导致定位不准
+  const w = popup.offsetWidth;
+  const h = popup.offsetHeight;
   const { x, y } = randomPosition(w, h);
   popup.style.left = x + "px";
   popup.style.top = y + "px";
@@ -128,14 +146,20 @@ playBtn.addEventListener("click", () => {
 
 // ===== 窗口尺寸变化时，防止弹窗跑出屏幕 =====
 window.addEventListener("resize", () => {
+  const desktop = document.getElementById("desktop");
+  const areaW = desktop ? desktop.clientWidth : window.innerWidth;
+  const areaH = desktop ? desktop.clientHeight : window.innerHeight;
   document.querySelectorAll(".ad-popup").forEach((p) => {
     const w = p.offsetWidth;
     const h = p.offsetHeight;
     const left = parseInt(p.style.left, 10);
     const top = parseInt(p.style.top, 10);
-    const maxX = window.innerWidth - w - 10;
-    const maxY = window.innerHeight - h - 50;
+    const maxX = areaW - w - 10;
+    const maxY = areaH - h - 50;
     if (left > maxX) p.style.left = Math.max(10, maxX) + "px";
     if (top > maxY) p.style.top = Math.max(10, maxY) + "px";
   });
 });
+
+// ===== 横屏适配由 CSS 媒体查询处理（见 style.css 的 @media portrait）=====
+// 竖屏时 #rotateWrap 旋转 90° 铺满，无需 JS 干预

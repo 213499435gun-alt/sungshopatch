@@ -10,13 +10,36 @@ html, body {
   height: 100%;
   overflow: hidden;
   font-family: "Tahoma", "Microsoft YaHei", "Segoe UI", sans-serif;
+  background: #000;
+}
+
+/* ===== 横屏画布 ===== */
+#rotateWrap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* 竖屏设备：整体旋转 90°，强制横屏铺满 */
+@media (orientation: portrait) {
+  #rotateWrap {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vh;
+    height: 100vw;
+    transform-origin: top left;
+    transform: rotate(90deg) translateY(-100vw);
+  }
 }
 
 /* ===== 桌面：经典蓝天草地壁纸 ===== */
 #desktop {
   position: relative;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   background-image: url("IMG_5614.JPG");
   background-size: cover;
@@ -173,7 +196,7 @@ html, body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(720px, 80vw);
+  width: min(720px, 80%);
   background: #d4d0c8;
   /* 经典 3D 立体银色边框 */
   border: 2px solid;
@@ -451,7 +474,7 @@ html, body {
 
 /* ===== 广告弹窗 ===== */
 #popupLayer {
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 9999;
