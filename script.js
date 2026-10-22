@@ -33,14 +33,27 @@ const playBtn = document.getElementById("playBtn");
 // ===== 预加载所有广告图片 =====
 // 页面加载时就把图片全部下载并解码进内存，点击时直接从缓存取，弹窗瞬间出现
 const preloadedImages = {};
-AD_IMAGES.forEach((src) => {
+const preloadPromises = AD_IMAGES.map((src) => {
   const im = new Image();
   im.src = src;
-  // decode() 提前解码，避免首次显示时卡顿
-  if (im.decode) {
-    im.decode().catch(() => {});
-  }
   preloadedImages[src] = im;
+  // decode() 返回 Promise，确保图片真正解码完成（不只是下载完）
+  if (im.decode) {
+    return im.decode().catch(() => {});
+  }
+  // 老浏览器兜底：等 onload
+  return new Promise((resolve) => {
+    if (im.complete) resolve();
+    else {
+      im.onload = () => resolve();
+      im.onerror = () => resolve();
+    }
+  });
+});
+// 所有图片解码完成的标志
+let imagesReady = false;
+Promise.all(preloadPromises).then(() => {
+  imagesReady = true;
 });
 
 // ===== 时钟 =====
@@ -80,11 +93,16 @@ function createAdPopup() {
   const imgSrc = AD_IMAGES[randInt(0, AD_IMAGES.length - 1)];
   const cached = preloadedImages[imgSrc];
 
-  // 图片已预加载：直接用真实尺寸一步创建，无跳动、无延迟
-  if (cached && cached.complete && cached.naturalWidth > 0) {
+  // 确保图片已解码完成再显示，避免白屏
+  const ready = cached && cached.complete && cached.naturalWidth > 0;
+  if (ready && cached.decode) {
+    cached.decode().then(() => buildPopup(cached, title)).catch(() => {
+      buildPopup(cached, title);
+    });
+  } else if (ready) {
     buildPopup(cached, title);
   } else {
-    // 兜底：万一还没加载完，等加载完成再创建
+    // 兜底：还没加载完，等加载完成再创建
     const img = cached || new Image();
     img.onload = () => buildPopup(img, title);
     img.onerror = () => console.warn("广告图片加载失败：", imgSrc);

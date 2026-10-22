@@ -183,7 +183,8 @@ html, body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(720px, 80%);
+  /* 宽度同时受屏幕宽、高约束：用 vh 反推，保证整体不撑满屏幕 */
+  width: min(720px, 70vw, 70%, 130vh);
   background: #d4d0c8;
   /* 经典 3D 立体银色边框 */
   border: 2px solid;
@@ -474,13 +475,14 @@ html, body {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
   pointer-events: auto;
   overflow: visible;
+  transform-origin: top left;
   animation: popIn 0.12s ease-out;
   display: flex;
   flex-direction: column;
 }
 
 @keyframes popIn {
-  from { transform: scale(0.7); opacity: 0; }
+  from { transform: scale(0.85); opacity: 0; }
   to   { transform: scale(1); opacity: 1; }
 }
 
