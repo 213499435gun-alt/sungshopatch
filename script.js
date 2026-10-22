@@ -71,17 +71,47 @@ function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// ===== 生成随机位置（保证在屏幕内）=====
+// ===== 生成随机位置（保证在屏幕内，且避开中央播放按钮）=====
 function randomPosition(w, h) {
-  // 用桌面容器的实际尺寸（旋转后仍准确），而不是 window 视口
   const desktop = document.getElementById("desktop");
   const areaW = desktop ? desktop.clientWidth : window.innerWidth;
   const areaH = desktop ? desktop.clientHeight : window.innerHeight;
   const maxX = areaW - w - 10;
   const maxY = areaH - h - 50; // 留出任务栏
-  const x = Math.max(10, randInt(10, Math.max(10, maxX)));
-  const y = Math.max(10, randInt(10, Math.max(10, maxY)));
-  return { x, y };
+
+  // 播放按钮所在区域（屏幕中央），弹窗要避开它，否则会挡住按钮导致点不动
+  const player = document.getElementById("player");
+  let avoid = null;
+  if (player) {
+    const pr = player.getBoundingClientRect();
+    const dr = desktop.getBoundingClientRect();
+    // 转成相对 desktop 的坐标
+    avoid = {
+      left: pr.left - dr.left,
+      top: pr.top - dr.top,
+      right: pr.right - dr.left,
+      bottom: pr.bottom - dr.top,
+    };
+  }
+
+  // 尝试多次找一个不与播放器重叠的位置
+  for (let i = 0; i < 30; i++) {
+    const x = Math.max(10, randInt(10, Math.max(10, maxX)));
+    const y = Math.max(10, randInt(10, Math.max(10, maxY)));
+    if (!avoid) return { x, y };
+    // 判断弹窗矩形是否与播放器矩形重叠
+    const overlap =
+      x < avoid.right &&
+      x + w > avoid.left &&
+      y < avoid.bottom &&
+      y + h > avoid.top;
+    if (!overlap) return { x, y };
+  }
+  // 实在找不到就返回随机位置
+  return {
+    x: Math.max(10, randInt(10, Math.max(10, maxX))),
+    y: Math.max(10, randInt(10, Math.max(10, maxY))),
+  };
 }
 
 // ===== 创建广告弹窗 =====

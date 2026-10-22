@@ -197,6 +197,40 @@ html, body {
   z-index: 10;
 }
 
+/* 手机横屏（矮屏）：播放器缩小，避免占满屏幕 */
+@media (max-height: 500px) {
+  .player-window {
+    width: min(60vw, 100vh);
+  }
+  .player-titlebar {
+    font-size: 10px;
+    padding: 2px 2px 2px 4px;
+  }
+  .ctrl-btn {
+    width: 14px;
+    height: 12px;
+    font-size: 8px;
+  }
+  .player-controls {
+    padding: 3px 6px 4px;
+  }
+  .control-row {
+    gap: 8px;
+    font-size: 11px;
+  }
+  .control-row .time {
+    font-size: 9px;
+  }
+  .progress-bar {
+    height: 4px;
+    margin-bottom: 3px;
+  }
+  .play-btn svg {
+    width: 44px;
+    height: 44px;
+  }
+}
+
 .player-titlebar {
   display: flex;
   align-items: center;
