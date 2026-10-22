@@ -1,0 +1,549 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: "Tahoma", "Microsoft YaHei", "Segoe UI", sans-serif;
+}
+
+/* ===== 桌面：经典蓝天草地壁纸 ===== */
+#desktop {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-image: url("IMG_5614.JPG");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* ===== 桌面图标 ===== */
+.desktop-icons {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  z-index: 5;
+}
+
+.desktop-icon {
+  width: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  color: #fff;
+  font-size: 11px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 2px;
+  text-align: center;
+}
+
+.desktop-icon:hover {
+  background: rgba(49, 106, 197, 0.4);
+  outline: 1px dotted rgba(255, 255, 255, 0.6);
+}
+
+.icon-img {
+  width: 40px;
+  height: 40px;
+  position: relative;
+}
+
+/* 回收站 */
+.icon-recycle {
+  background: linear-gradient(180deg, #d8d8d8, #a0a0a0);
+  border: 2px solid #888;
+  border-radius: 4px 4px 6px 6px;
+  box-shadow: inset 0 2px 3px rgba(255,255,255,0.6), 0 2px 4px rgba(0,0,0,0.4);
+}
+.icon-recycle::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: 6px;
+  width: 24px;
+  height: 6px;
+  background: #b0b0b0;
+  border: 2px solid #888;
+  border-radius: 3px;
+}
+
+/* 我的电脑 */
+.icon-computer {
+  background: linear-gradient(180deg, #e8e8e8, #b0b0b0);
+  border: 2px solid #777;
+  border-radius: 4px;
+  box-shadow: inset 0 2px 3px rgba(255,255,255,0.7), 0 2px 4px rgba(0,0,0,0.4);
+}
+.icon-computer::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 5px;
+  width: 26px;
+  height: 18px;
+  background: linear-gradient(135deg, #2f7bc4, #1e5fa8);
+  border: 1px solid #555;
+  border-radius: 2px;
+}
+.icon-computer::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  left: 12px;
+  width: 12px;
+  height: 4px;
+  background: #999;
+  border-radius: 1px;
+}
+
+/* IE 图标 */
+.icon-ie {
+  background: radial-gradient(circle at 40% 40%, #4a9ad8, #1e5fa8);
+  border-radius: 50%;
+  border: 2px solid #0d3a6b;
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.5), 0 2px 4px rgba(0,0,0,0.4);
+}
+.icon-ie::before {
+  content: "e";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 26px;
+  font-weight: bold;
+  font-style: italic;
+  color: #fff;
+  font-family: Georgia, serif;
+}
+
+/* 文件夹 */
+.icon-folder {
+  background: linear-gradient(180deg, #ffd966, #e8a800);
+  border: 2px solid #b8860b;
+  border-radius: 3px 3px 5px 5px;
+  box-shadow: inset 0 2px 3px rgba(255,255,255,0.6), 0 2px 4px rgba(0,0,0,0.4);
+}
+.icon-folder::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 2px;
+  width: 18px;
+  height: 8px;
+  background: #ffd966;
+  border: 2px solid #b8860b;
+  border-bottom: none;
+  border-radius: 3px 3px 0 0;
+}
+
+/* 记事本 */
+.icon-notepad {
+  background: linear-gradient(180deg, #ffffff, #e0e0e0);
+  border: 2px solid #888;
+  border-radius: 2px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+.icon-notepad::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  left: 6px;
+  width: 26px;
+  height: 2px;
+  background: #4a9ad8;
+  box-shadow: 0 6px 0 #4a9ad8, 0 12px 0 #4a9ad8, 0 18px 0 #4a9ad8;
+}
+
+/* ===== 视频播放器窗口（Windows 经典银色边框）===== */
+.player-window {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(720px, 80vw);
+  background: #d4d0c8;
+  /* 经典 3D 立体银色边框 */
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  box-shadow:
+    inset 1px 1px 0 #dfdfdf,
+    inset -1px -1px 0 #404040,
+    0 12px 40px rgba(0, 0, 0, 0.5);
+  padding: 3px;
+  z-index: 10;
+}
+
+.player-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(180deg, #0a246a 0%, #a6caf0 100%);
+  padding: 3px 3px 3px 6px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: bold;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.6);
+}
+
+.window-controls {
+  display: flex;
+  gap: 2px;
+}
+
+.ctrl-btn {
+  width: 18px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #000;
+  background: #d4d0c8;
+  border: 1px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  cursor: pointer;
+}
+
+.ctrl-btn:hover {
+  background: #e0dcd4;
+}
+
+.ctrl-btn:active {
+  border-color: #808080 #ffffff #ffffff #808080;
+}
+
+.ctrl-btn.close {
+  font-weight: bold;
+}
+
+.player-body {
+  background: #000;
+  border: 1px solid;
+  border-color: #808080 #ffffff #ffffff #808080;
+  margin-top: 3px;
+}
+
+.video-cover {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.video-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+  font-size: 18px;
+}
+
+.cover-placeholder small {
+  font-size: 12px;
+  color: #444;
+}
+
+.play-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6));
+}
+
+.play-btn:hover {
+  transform: translate(-50%, -50%) scale(1.12);
+}
+
+.play-btn:active {
+  transform: translate(-50%, -50%) scale(0.95);
+}
+
+.player-controls {
+  background: #ece9d8;
+  padding: 6px 10px 8px;
+}
+
+.progress-bar {
+  height: 6px;
+  background: #fff;
+  border: 1px solid #888;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.progress-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(180deg, #4a9aff, #0054e3);
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #333;
+  font-size: 13px;
+}
+
+.control-row .time {
+  font-size: 11px;
+  color: #555;
+}
+
+.control-row .spacer {
+  flex: 1;
+}
+
+/* ===== 任务栏（XP 风格）===== */
+#taskbar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 40px;
+  background: linear-gradient(180deg, #3a93ff 0%, #0054e3 8%, #0054e3 40%, #0046c8 88%, #003db3 100%);
+  border-top: 1px solid #4a9aff;
+  display: flex;
+  align-items: center;
+  padding: 0 2px;
+  gap: 4px;
+  z-index: 100;
+  box-shadow: 0 -2px 6px rgba(0,0,0,0.3);
+}
+
+/* 开始按钮 */
+.start-btn {
+  height: 34px;
+  padding: 0 14px 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(180deg, #5cb84a 0%, #3a9e2a 45%, #2a8a1a 55%, #3a9e2a 100%);
+  border: 1px solid #1a6a0a;
+  border-radius: 0 8px 8px 0;
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  font-style: italic;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+  cursor: pointer;
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.5);
+}
+
+.start-btn:hover {
+  background: linear-gradient(180deg, #6cc85a 0%, #4aae3a 45%, #3a9a2a 55%, #4aae3a 100%);
+}
+
+.start-flag {
+  width: 18px;
+  height: 18px;
+  background:
+    linear-gradient(135deg, #ff5a5a 0 50%, #5aff5a 50% 100%),
+    linear-gradient(135deg, #5a5aff 0 50%, #ffd85a 50% 100%);
+  background-size: 50% 50%;
+  background-position: 0 0, 100% 100%;
+  background-repeat: no-repeat;
+  border-radius: 2px;
+  transform: skewX(-8deg);
+}
+
+/* 快速启动栏 */
+.quick-launch {
+  display: flex;
+  gap: 2px;
+  padding: 0 4px;
+  border-right: 1px solid rgba(255,255,255,0.3);
+  height: 30px;
+  align-items: center;
+}
+
+.ql-icon {
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 2px;
+}
+
+.ql-icon:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+/* 任务按钮区 */
+.taskbar-tasks {
+  flex: 1;
+  display: flex;
+  gap: 3px;
+  padding: 0 4px;
+  overflow: hidden;
+}
+
+.task-item {
+  height: 30px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(180deg, #4a9aff, #0054e3);
+  border: 1px solid #003db3;
+  border-radius: 3px;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.4);
+}
+
+.task-item.active {
+  background: linear-gradient(180deg, #2a7aff, #0046c8);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* 系统托盘 */
+.taskbar-tray {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 10px;
+  background: linear-gradient(180deg, #2a8aff, #0054e3);
+  border: 1px solid #003db3;
+  border-radius: 3px;
+  color: #fff;
+  font-size: 13px;
+}
+
+.taskbar-tray .clock {
+  font-size: 12px;
+  color: #fff;
+  min-width: 44px;
+  text-align: center;
+}
+
+/* ===== 广告弹窗 ===== */
+#popupLayer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.ad-popup {
+  position: absolute;
+  background: transparent;
+  border: none;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+  pointer-events: auto;
+  overflow: visible;
+  animation: popIn 0.18s ease-out;
+  transition: left 0.25s ease, top 0.25s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes popIn {
+  from { transform: scale(0.7); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+/* 左上角关闭按钮（悬浮在图片上） */
+.ad-close {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #fff;
+  z-index: 2;
+  line-height: 1;
+}
+
+.ad-close:hover {
+  background: rgba(200, 0, 0, 0.85);
+}
+
+.ad-body {
+  flex: 1;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.ad-body img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 4px;
+}
+
+.ad-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #999;
+  font-size: 13px;
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  background: repeating-linear-gradient(45deg, #f5f5f5, #f5f5f5 10px, #ececec 10px, #ececec 20px);
+}
+
+.ad-placeholder .ad-num {
+  font-size: 28px;
+  font-weight: bold;
+  color: #bbb;
+}
+
+/* 弹窗抖动效果 */
+.ad-popup.shake {
+  animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}

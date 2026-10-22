@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Windows</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- 桌面 -->
+  <div id="desktop">
+    <!-- 桌面图标 -->
+    <div class="desktop-icons">
+      <div class="desktop-icon">
+        <div class="icon-img icon-recycle"></div>
+        <span>回收站</span>
+      </div>
+      <div class="desktop-icon">
+        <div class="icon-img icon-computer"></div>
+        <span>我的电脑</span>
+      </div>
+      <div class="desktop-icon">
+        <div class="icon-img icon-ie"></div>
+        <span>Internet Explorer</span>
+      </div>
+      <div class="desktop-icon">
+        <div class="icon-img icon-folder"></div>
+        <span>我的文档</span>
+      </div>
+      <div class="desktop-icon">
+        <div class="icon-img icon-notepad"></div>
+        <span>记事本</span>
+      </div>
+    </div>
+
+    <!-- 中央视频播放器 -->
+    <div id="player" class="player-window">
+      <div class="player-titlebar">
+        <span class="player-title">当红小生购置房地产备婚房 老公竟是队友？</span>
+        <div class="window-controls">
+          <span class="ctrl-btn">—</span>
+          <span class="ctrl-btn">▢</span>
+          <span class="ctrl-btn close">✕</span>
+        </div>
+      </div>
+      <div class="player-body">
+        <div class="video-cover" id="videoCover">
+          <img src="未命名的作品.jpg" alt="视频封面" />
+          <button id="playBtn" class="play-btn" aria-label="播放">
+            <svg viewBox="0 0 24 24" width="64" height="64">
+              <circle cx="12" cy="12" r="11" fill="rgba(0,0,0,0.55)" />
+              <polygon points="9,7 9,17 18,12" fill="#fff" />
+            </svg>
+          </button>
+        </div>
+        <div class="player-controls">
+          <div class="progress-bar"><div class="progress-fill"></div></div>
+          <div class="control-row">
+            <span>▶</span>
+            <span class="time">00:00 / 03:24</span>
+            <span class="spacer"></span>
+            <span>🔊</span>
+            <span>⛶</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 任务栏（XP 风格） -->
+    <div id="taskbar">
+      <div class="start-btn">
+        <span class="start-flag"></span>
+        <span class="start-text">开始</span>
+      </div>
+      <div class="quick-launch">
+        <span class="ql-icon">🌐</span>
+        <span class="ql-icon">📁</span>
+        <span class="ql-icon">🎬</span>
+      </div>
+      <div class="taskbar-tasks">
+        <div class="task-item active">🎬 视频播放器</div>
+      </div>
+      <div class="taskbar-tray">
+        <span>🔊</span>
+        <span>🛡️</span>
+        <span class="clock" id="clock">--:--</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 弹窗容器 -->
+  <div id="popupLayer"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
