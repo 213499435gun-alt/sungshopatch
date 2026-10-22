@@ -13,26 +13,13 @@ html, body {
   background: #000;
 }
 
-/* ===== 横屏画布 ===== */
+/* ===== 页面容器：铺满整个屏幕 ===== */
 #rotateWrap {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-}
-
-/* 竖屏设备：整体旋转 90°，强制横屏铺满 */
-@media (orientation: portrait) {
-  #rotateWrap {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vh;
-    height: 100vw;
-    transform-origin: top left;
-    transform: rotate(90deg) translateY(-100vw);
-  }
 }
 
 /* ===== 桌面：经典蓝天草地壁纸 ===== */
@@ -487,8 +474,7 @@ html, body {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
   pointer-events: auto;
   overflow: visible;
-  animation: popIn 0.18s ease-out;
-  transition: left 0.25s ease, top 0.25s ease;
+  animation: popIn 0.12s ease-out;
   display: flex;
   flex-direction: column;
 }

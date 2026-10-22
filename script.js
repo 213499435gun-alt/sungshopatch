@@ -30,6 +30,19 @@ let popupCount = 0;
 const popupLayer = document.getElementById("popupLayer");
 const playBtn = document.getElementById("playBtn");
 
+// ===== 预加载所有广告图片 =====
+// 页面加载时就把图片全部下载并解码进内存，点击时直接从缓存取，弹窗瞬间出现
+const preloadedImages = {};
+AD_IMAGES.forEach((src) => {
+  const im = new Image();
+  im.src = src;
+  // decode() 提前解码，避免首次显示时卡顿
+  if (im.decode) {
+    im.decode().catch(() => {});
+  }
+  preloadedImages[src] = im;
+});
+
 // ===== 时钟 =====
 function updateClock() {
   const now = new Date();
@@ -65,10 +78,32 @@ function createAdPopup() {
   const idx = popupCount;
   const title = AD_TITLES[idx % AD_TITLES.length];
   const imgSrc = AD_IMAGES[randInt(0, AD_IMAGES.length - 1)];
+  const cached = preloadedImages[imgSrc];
 
-  // 先用默认尺寸立即创建弹窗（点击立刻有反馈，不卡）
+  // 图片已预加载：直接用真实尺寸一步创建，无跳动、无延迟
+  if (cached && cached.complete && cached.naturalWidth > 0) {
+    buildPopup(cached, title);
+  } else {
+    // 兜底：万一还没加载完，等加载完成再创建
+    const img = cached || new Image();
+    img.onload = () => buildPopup(img, title);
+    img.onerror = () => console.warn("广告图片加载失败：", imgSrc);
+    if (!cached) img.src = imgSrc;
+  }
+}
+
+// ===== 用图片真实尺寸构建弹窗 =====
+function buildPopup(img, title) {
+  const ratio = img.naturalWidth / img.naturalHeight;
   let w = MAX_W;
-  let h = Math.round(MAX_W * 0.75);
+  let h = w / ratio;
+  if (h > MAX_H) {
+    h = MAX_H;
+    w = h * ratio;
+  }
+  w = Math.round(w);
+  h = Math.round(h);
+
   const { x, y } = randomPosition(w, h);
 
   const popup = document.createElement("div");
@@ -84,6 +119,10 @@ function createAdPopup() {
   `;
 
   const body = popup.querySelector(".ad-body");
+  // 克隆图片节点，避免同一张图被多个弹窗复用时互相"抢走"导致变白
+  const imgEl = img.cloneNode();
+  imgEl.alt = title;
+  body.appendChild(imgEl);
 
   // 关闭按钮：关不掉，反而跳到别的位置
   const closeBtn = popup.querySelector(".ad-close");
@@ -94,34 +133,6 @@ function createAdPopup() {
 
   popupLayer.appendChild(popup);
   popupCount++;
-
-  // 图片加载完成后，按真实比例调整弹窗尺寸并填入图片
-  const img = new Image();
-  img.onload = () => {
-    const ratio = img.naturalWidth / img.naturalHeight;
-    let nw = MAX_W;
-    let nh = nw / ratio;
-    if (nh > MAX_H) {
-      nh = MAX_H;
-      nw = nh * ratio;
-    }
-    nw = Math.round(nw);
-    nh = Math.round(nh);
-
-    // 重新定位，避免尺寸变化后跑出屏幕
-    const pos = randomPosition(nw, nh);
-    popup.style.width = nw + "px";
-    popup.style.height = nh + "px";
-    popup.style.left = pos.x + "px";
-    popup.style.top = pos.y + "px";
-
-    img.alt = title;
-    body.appendChild(img);
-  };
-  img.onerror = () => {
-    console.warn("广告图片加载失败：", imgSrc);
-  };
-  img.src = imgSrc;
 }
 
 // ===== 把弹窗移动到新位置 =====
@@ -161,5 +172,4 @@ window.addEventListener("resize", () => {
   });
 });
 
-// ===== 横屏适配由 CSS 媒体查询处理（见 style.css 的 @media portrait）=====
-// 竖屏时 #rotateWrap 旋转 90° 铺满，无需 JS 干预
+
