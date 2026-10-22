@@ -13,17 +13,18 @@ const AD_TITLES = [
   "💎 尊享特权",
 ];
 
-// 弹窗尺寸范围（宽 x 高，单位 px）—— 随机生成，适配不同尺寸图片
-const SIZE_RANGES = [
-  { w: [260, 320], h: [180, 240] },
-  { w: [300, 380], h: [200, 280] },
-  { w: [340, 420], h: [240, 320] },
-  { w: [280, 360], h: [260, 340] },
-  { w: [320, 400], h: [180, 260] },
-  { w: [260, 340], h: [220, 300] },
-  { w: [360, 440], h: [200, 280] },
-  { w: [300, 380], h: [240, 320] },
+// 弹窗图片池（assets 目录下的素材，随机取用）
+const AD_IMAGES = [
+  "assets/2547.GIF",
+  "assets/2615.GIF",
+  "assets/2600.PNG",
+  "assets/76c8db04842bf7bd9ab88981148d4863.JPG",
+  "assets/cb2990c259045d0ca38041491108568b.JPG",
 ];
+
+// 弹窗最大显示尺寸（宽 x 高，单位 px）—— 图片会等比缩放到这个范围内
+const MAX_W = 420;
+const MAX_H = 360;
 
 let popupCount = 0;
 const popupLayer = document.getElementById("popupLayer");
@@ -59,54 +60,53 @@ function createAdPopup() {
 
   const idx = popupCount;
   const title = AD_TITLES[idx % AD_TITLES.length];
-  const range = SIZE_RANGES[idx % SIZE_RANGES.length];
-  const w = randInt(range.w[0], range.w[1]);
-  const h = randInt(range.h[0], range.h[1]);
-  const { x, y } = randomPosition(w, h);
+  const imgSrc = AD_IMAGES[randInt(0, AD_IMAGES.length - 1)];
 
-  const popup = document.createElement("div");
-  popup.className = "ad-popup";
-  popup.style.width = w + "px";
-  popup.style.height = h + "px";
-  popup.style.left = x + "px";
-  popup.style.top = y + "px";
+  // 先加载图片，拿到原始尺寸后按比例计算弹窗大小
+  const img = new Image();
+  img.onload = () => {
+    const ratio = img.naturalWidth / img.naturalHeight;
+    let w = MAX_W;
+    let h = w / ratio;
+    if (h > MAX_H) {
+      h = MAX_H;
+      w = h * ratio;
+    }
+    w = Math.round(w);
+    h = Math.round(h);
 
-  // 图片占位：之后替换为 assets/ad1.jpg ... ad8.jpg
-  // 如果对应图片存在则显示图片，否则显示占位
-  const imgSrc = `assets/ad${idx + 1}.jpg`;
+    const { x, y } = randomPosition(w, h);
 
-  popup.innerHTML = `
-    <span class="ad-close" title="关闭">✕</span>
-    <div class="ad-body">
-      <div class="ad-placeholder">
-        <span class="ad-num">${idx + 1}</span>
-        <span>广告图片 ${idx + 1}</span>
-        <small>（替换 assets/ad${idx + 1}.jpg）</small>
-      </div>
-    </div>
-  `;
+    const popup = document.createElement("div");
+    popup.className = "ad-popup";
+    popup.style.width = w + "px";
+    popup.style.height = h + "px";
+    popup.style.left = x + "px";
+    popup.style.top = y + "px";
 
-  // 尝试加载图片，成功则替换占位
-  const testImg = new Image();
-  testImg.onload = () => {
+    popup.innerHTML = `
+      <span class="ad-close" title="关闭">✕</span>
+      <div class="ad-body"></div>
+    `;
+
     const body = popup.querySelector(".ad-body");
-    body.innerHTML = "";
-    const img = document.createElement("img");
-    img.src = imgSrc;
     img.alt = title;
     body.appendChild(img);
+
+    // 关闭按钮：关不掉，反而跳到别的位置
+    const closeBtn = popup.querySelector(".ad-close");
+    closeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      movePopup(popup, w, h);
+    });
+
+    popupLayer.appendChild(popup);
+    popupCount++;
   };
-  testImg.src = imgSrc;
-
-  // 关闭按钮：关不掉，反而跳到别的位置
-  const closeBtn = popup.querySelector(".ad-close");
-  closeBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    movePopup(popup, w, h);
-  });
-
-  popupLayer.appendChild(popup);
-  popupCount++;
+  img.onerror = () => {
+    console.warn("广告图片加载失败：", imgSrc);
+  };
+  img.src = imgSrc;
 }
 
 // ===== 把弹窗移动到新位置 =====

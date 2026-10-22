@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>弹窗素材预览</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+      background: #1e1e1e;
+      color: #eee;
+      padding: 24px;
+    }
+    h1 {
+      font-size: 20px;
+      margin-bottom: 6px;
+    }
+    .sub {
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: #2a2a2a;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+    }
+    .thumb {
+      width: 100%;
+      height: 200px;
+      background: #111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .thumb img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+    .meta {
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .meta .name {
+      font-weight: bold;
+      color: #fff;
+      word-break: break-all;
+    }
+    .meta .type {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 1px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+    }
+    .type.gif { background: #7a3fb0; color: #fff; }
+    .type.static { background: #2f6fb0; color: #fff; }
+    .meta .size { color: #888; }
+  </style>
+</head>
+<body>
+  <h1>弹窗素材预览</h1>
+  <p class="sub">assets 目录下的全部图片（GIF 会动，静态图正常显示）</p>
+  <div class="grid" id="grid"></div>
+
+  <script>
+    const IMAGES = [
+      "assets/2547.GIF",
+      "assets/2615.GIF",
+      "assets/2600.PNG",
+      "assets/76c8db04842bf7bd9ab88981148d4863.JPG",
+      "assets/cb2990c259045d0ca38041491108568b.JPG",
+    ];
+
+    const grid = document.getElementById("grid");
+
+    IMAGES.forEach((src) => {
+      const isGif = /\.gif$/i.test(src);
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const thumb = document.createElement("div");
+      thumb.className = "thumb";
+      const img = new Image();
+      img.src = src;
+      img.alt = src;
+      thumb.appendChild(img);
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.innerHTML = `
+        <div class="name">${src.split("/").pop()}</div>
+        <span class="type ${isGif ? "gif" : "static"}">${isGif ? "GIF 动图" : "静态图"}</span>
+        <div class="size">尺寸：<span class="dim">加载中…</span></div>
+      `;
+
+      img.onload = () => {
+        meta.querySelector(".dim").textContent =
+          `${img.naturalWidth} × ${img.naturalHeight}`;
+      };
+      img.onerror = () => {
+        meta.querySelector(".dim").textContent = "加载失败";
+      };
+
+      card.appendChild(thumb);
+      card.appendChild(meta);
+      grid.appendChild(card);
+    });
+  </script>
+</body>
+</html>
