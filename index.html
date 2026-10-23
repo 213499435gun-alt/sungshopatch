@@ -1,10 +1,14 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="loading">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Windows</title>
-  <link rel="stylesheet" href="style.css?v=18" />
+  <link rel="preload" as="image" href="IMG_5614.JPG" fetchpriority="high" />
+  <link rel="preload" as="image" href="未命名的作品.jpg" fetchpriority="high" />
+  <style>.loading #rotateWrap { visibility: hidden; }</style>
+  <noscript><style>.loading #rotateWrap { visibility: visible; }</style></noscript>
+  <link rel="stylesheet" href="style.css?v=19" />
 </head>
 <body>
   <!-- 旋转容器：竖屏设备时整体旋转 90°，强制横屏铺满 -->
@@ -47,7 +51,7 @@
       </div>
       <div class="player-body">
         <div class="video-cover" id="videoCover">
-          <img src="未命名的作品.jpg" alt="视频封面" />
+          <img src="未命名的作品.jpg" alt="视频封面" fetchpriority="high" loading="eager" />
           <button id="playBtn" class="play-btn" aria-label="播放">
             <svg viewBox="0 0 24 24" width="64" height="64">
               <circle cx="12" cy="12" r="11" fill="rgba(0,0,0,0.55)" />
@@ -94,6 +98,6 @@
   <div id="popupLayer"></div>
   </div><!-- /#rotateWrap -->
 
-  <script src="script.js?v=18"></script>
+  <script src="script.js?v=19"></script>
 </body>
 </html>

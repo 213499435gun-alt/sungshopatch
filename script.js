@@ -51,10 +51,44 @@ function shuffle(arr) {
 // 取下一张图：队列空了就重新洗牌
 function nextImage() {
   if (imageQueue.length === 0) {
-    imageQueue = shuffle(AD_IMAGES);
+    imageQueue = shuffle(readyImages);
   }
   return imageQueue.shift();
 }
+
+// 预先加载并解码素材；弹窗只使用已经准备好的图片。
+const imageCache = new Map();
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = async () => {
+      try { if (img.decode) await img.decode(); } catch (_) {}
+      imageCache.set(src, img);
+      resolve(img);
+    };
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+playBtn.disabled = true;
+playBtn.setAttribute("aria-label", "素材加载中");
+const readyImages = [];
+Promise.all(AD_IMAGES.map(async (src) => {
+  try {
+    await loadImage(src);
+    readyImages.push(src);
+    // 第一张就绪就允许播放，其余素材继续后台加载。
+    playBtn.disabled = false;
+    playBtn.setAttribute("aria-label", "播放");
+  } catch (_) { console.warn("图片加载失败：", src); }
+})).then(() => {
+  if (!readyImages.length) playBtn.setAttribute("aria-label", "素材加载失败，请刷新重试");
+});
+
+// 封面与壁纸准备好后，一起显示桌面，避免 UI 和图片分批出现。
+Promise.all([loadImage("IMG_5614.JPG"), loadImage("未命名的作品.jpg")])
+  .catch(() => {})
+  .finally(() => document.documentElement.classList.remove("loading"));
 
 // ===== 时钟 =====
 function updateClock() {
@@ -138,7 +172,7 @@ function randomPosition(w, h) {
 
 // ===== 创建广告弹窗 =====
 function createAdPopup() {
-  if (popupCount >= MAX_POPUPS) return;
+  if (popupCount >= MAX_POPUPS || !readyImages.length) return;
 
   const idx = popupCount;
   const title = AD_TITLES[idx % AD_TITLES.length];
@@ -171,7 +205,8 @@ function buildPopup(imgSrc, title) {
     maxH = areaH * MAX_H_RATIO;
   }
 
-  const ratio = 1;
+  const cached = imageCache.get(imgSrc);
+  const ratio = cached.naturalWidth / cached.naturalHeight;
   let w = maxW;
   let h = w / ratio;
   if (h > maxH) {
@@ -198,21 +233,9 @@ function buildPopup(imgSrc, title) {
   `;
 
   const body = popup.querySelector(".ad-body");
-  // 克隆图片节点，避免同一张图被多个弹窗复用时互相"抢走"导致变白
-  const imgEl = new Image();
+  const imgEl = imageCache.get(imgSrc).cloneNode();
   imgEl.alt = title;
-  body.textContent = "图片加载中…";
-  imgEl.addEventListener("load", () => {
-    const ratio = imgEl.naturalWidth / imgEl.naturalHeight;
-    const width = Math.min(maxW, maxH * ratio);
-    popup.style.width = Math.round(width) + "px";
-    popup.style.height = Math.round(width / ratio) + "px";
-    body.replaceChildren(imgEl);
-  }, { once: true });
-  imgEl.addEventListener("error", () => {
-    body.textContent = title + "（图片暂时无法加载）";
-  }, { once: true });
-  imgEl.src = imgSrc;
+  body.appendChild(imgEl);
 
   // 关闭按钮：关不掉，反而跳到别的位置
   const closeBtn = popup.querySelector(".ad-close");
