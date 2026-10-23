@@ -75,13 +75,13 @@ function loadImage(src) {
       resolve(img);
     };
     img.onerror = () => {
-      // 旧浏览器不支持动画 WebP 时，保留原 GIF 作为后备。
+      // WebP 请求失败时使用原始素材。
       if (img.dataset.fallback) { clearTimeout(timer); reject(new Error(src)); return; }
       img.dataset.fallback = "true";
       img.src = src;
     };
-    img.src = src.endsWith(".GIF")
-      ? src.replace("assets/", "assets/optimized/").replace(".GIF", ".webp")
+    img.src = src.startsWith("assets/")
+      ? src.replace("assets/", "assets/optimized/").replace(/\.(gif|jpg|png)$/i, ".webp")
       : src;
   });
 }
