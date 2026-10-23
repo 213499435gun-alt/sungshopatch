@@ -66,8 +66,15 @@ function loadImage(src) {
       imageCache.set(src, img);
       resolve(img);
     };
-    img.onerror = reject;
-    img.src = src;
+    img.onerror = () => {
+      // 旧浏览器不支持动画 WebP 时，保留原 GIF 作为后备。
+      if (img.dataset.fallback) { reject(new Error(src)); return; }
+      img.dataset.fallback = "true";
+      img.src = src;
+    };
+    img.src = src.endsWith(".GIF")
+      ? src.replace("assets/", "assets/optimized/").replace(".GIF", ".webp")
+      : src;
   });
 }
 playBtn.disabled = true;
