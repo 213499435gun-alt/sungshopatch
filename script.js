@@ -36,7 +36,6 @@ const popupLayer = document.getElementById("popupLayer");
 const playBtn = document.getElementById("playBtn");
 
 // ===== 图片洗牌队列：一轮内不重复，全部用完后再重新洗牌 =====
-let imageQueue = [];
 
 // 洗牌函数（Fisher-Yates）
 function shuffle(arr) {
@@ -48,12 +47,17 @@ function shuffle(arr) {
   return a;
 }
 
-// 取下一张图：队列空了就重新洗牌
+// 每轮优先展示尚未出现过的素材，慢加载图片不会被跳过。
+const shownImages = new Set();
 function nextImage() {
-  if (imageQueue.length === 0) {
-    imageQueue = shuffle(readyImages);
+  let available = readyImages.filter(src => !shownImages.has(src));
+  if (!available.length && settledImages === AD_IMAGES.length) {
+    shownImages.clear();
+    available = readyImages.slice();
   }
-  return imageQueue.shift();
+  const src = shuffle(available)[0];
+  if (src) shownImages.add(src);
+  return src;
 }
 
 // 预先加载并解码素材；弹窗只使用已经准备好的图片。
@@ -61,13 +65,18 @@ const imageCache = new Map();
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    const timer = setTimeout(() => {
+      img.onload = img.onerror = null;
+      reject(new Error("图片加载超时：" + src));
+    }, 30000);
     img.onload = () => {
+      clearTimeout(timer);
       imageCache.set(src, img);
       resolve(img);
     };
     img.onerror = () => {
       // 旧浏览器不支持动画 WebP 时，保留原 GIF 作为后备。
-      if (img.dataset.fallback) { reject(new Error(src)); return; }
+      if (img.dataset.fallback) { clearTimeout(timer); reject(new Error(src)); return; }
       img.dataset.fallback = "true";
       img.src = src;
     };
@@ -76,10 +85,15 @@ function loadImage(src) {
       : src;
   });
 }
-playBtn.disabled = true;
-playBtn.setAttribute("aria-label", "素材加载中");
 const readyImages = [];
 let settledImages = 0;
+let pendingPopup = false;
+const loadStatus = document.getElementById("loadStatus");
+function updateLoadStatus() {
+  loadStatus.textContent = pendingPopup
+    ? `图片准备中 ${settledImages}/${AD_IMAGES.length}，就绪后自动弹出…`
+    : "";
+}
 Promise.all(AD_IMAGES.map(async (src) => {
   try {
     await loadImage(src);
@@ -87,18 +101,10 @@ Promise.all(AD_IMAGES.map(async (src) => {
   } catch (_) { console.warn("图片加载失败：", src); }
   finally {
     settledImages++;
-    const status = `素材加载中 ${settledImages}/${AD_IMAGES.length}`;
-    playBtn.setAttribute("aria-label", status);
-    playBtn.title = status;
+    if (pendingPopup) createAdPopup();
+    updateLoadStatus();
   }
-})).then(() => {
-  // 等整组请求结束后再生成第一轮，避免慢加载素材错过有限的弹窗名额。
-  imageQueue = shuffle(readyImages);
-  playBtn.disabled = !readyImages.length;
-  const status = readyImages.length ? "播放" : "素材加载失败，请刷新重试";
-  playBtn.setAttribute("aria-label", status);
-  playBtn.title = status;
-});
+}));
 
 // 封面与壁纸准备好后，一起显示桌面，避免 UI 和图片分批出现。
 Promise.all([loadImage("IMG_5614.JPG"), loadImage("未命名的作品.jpg")])
@@ -187,14 +193,21 @@ function randomPosition(w, h) {
 
 // ===== 创建广告弹窗 =====
 function createAdPopup() {
-  if (popupCount >= MAX_POPUPS || !readyImages.length) return;
+  if (popupCount >= MAX_POPUPS) return;
 
   const idx = popupCount;
   const title = AD_TITLES[idx % AD_TITLES.length];
 
   // 选图：从洗牌队列取，一轮内不重复，用完再重新洗牌
   const imgSrc = nextImage();
-  // 立即创建弹窗，不让慢速或失败的图片请求阻塞点击反馈。
+  if (!imgSrc) {
+    pendingPopup = settledImages < AD_IMAGES.length;
+    updateLoadStatus();
+    if (!pendingPopup) loadStatus.textContent = "图片加载失败，请刷新后重试";
+    return;
+  }
+  pendingPopup = false;
+  updateLoadStatus();
   buildPopup(imgSrc, title);
 }
 
