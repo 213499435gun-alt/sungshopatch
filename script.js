@@ -52,30 +52,25 @@ function nextImage() {
 }
 
 // ===== 预加载所有广告图片 =====
-// 页面加载时就把图片全部下载并解码进内存，点击时直接从缓存取，弹窗瞬间出现
+// 等页面首屏加载完再预加载，避免和首屏渲染抢网络/CPU
 const preloadedImages = {};
-const preloadPromises = AD_IMAGES.map((src) => {
-  const im = new Image();
-  im.src = src;
-  preloadedImages[src] = im;
-  // decode() 返回 Promise，确保图片真正解码完成（不只是下载完）
-  if (im.decode) {
-    return im.decode().catch(() => {});
-  }
-  // 老浏览器兜底：等 onload
-  return new Promise((resolve) => {
-    if (im.complete) resolve();
-    else {
-      im.onload = () => resolve();
-      im.onerror = () => resolve();
+function preloadImages() {
+  AD_IMAGES.forEach((src) => {
+    const im = new Image();
+    im.src = src;
+    preloadedImages[src] = im;
+    // decode() 提前解码，避免首次显示时白屏
+    if (im.decode) {
+      im.decode().catch(() => {});
     }
   });
-});
-// 所有图片解码完成的标志
-let imagesReady = false;
-Promise.all(preloadPromises).then(() => {
-  imagesReady = true;
-});
+}
+// 页面加载完成后再预加载（不阻塞首屏）
+if (document.readyState === "complete") {
+  preloadImages();
+} else {
+  window.addEventListener("load", preloadImages);
+}
 
 // ===== 时钟 =====
 function updateClock() {
@@ -134,8 +129,8 @@ function randomPosition(w, h) {
   let best = null;
   let bestScore = -1;
   for (let i = 0; i < 60; i++) {
-    const x = Math.max(margin, randInt(margin, Math.max(margin, maxX)));
-    const y = Math.max(margin, randInt(margin, Math.max(margin, maxY)));
+    const x = randInt(margin, Math.max(margin, maxX));
+    const y = randInt(margin, Math.max(margin, maxY));
     if (overlaps(x, y)) continue;
     // 弹窗中心到画布中心的距离
     const px = x + w / 2;
@@ -152,8 +147,8 @@ function randomPosition(w, h) {
 
   // 兜底：所有候选都重叠播放器，就返回随机位置
   return {
-    x: Math.max(margin, randInt(margin, Math.max(margin, maxX))),
-    y: Math.max(margin, randInt(margin, Math.max(margin, maxY))),
+    x: randInt(margin, Math.max(margin, maxX)),
+    y: randInt(margin, Math.max(margin, maxY)),
   };
 }
 
