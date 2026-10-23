@@ -88,12 +88,6 @@ function loadImage(src) {
 const readyImages = [];
 let settledImages = 0;
 let pendingPopup = false;
-const loadStatus = document.getElementById("loadStatus");
-function updateLoadStatus() {
-  loadStatus.textContent = pendingPopup
-    ? `图片准备中 ${settledImages}/${AD_IMAGES.length}，就绪后自动弹出…`
-    : "";
-}
 Promise.all(AD_IMAGES.map(async (src) => {
   try {
     await loadImage(src);
@@ -102,7 +96,6 @@ Promise.all(AD_IMAGES.map(async (src) => {
   finally {
     settledImages++;
     if (pendingPopup) createAdPopup();
-    updateLoadStatus();
   }
 }));
 
@@ -202,12 +195,9 @@ function createAdPopup() {
   const imgSrc = nextImage();
   if (!imgSrc) {
     pendingPopup = settledImages < AD_IMAGES.length;
-    updateLoadStatus();
-    if (!pendingPopup) loadStatus.textContent = "图片加载失败，请刷新后重试";
     return;
   }
   pendingPopup = false;
-  updateLoadStatus();
   buildPopup(imgSrc, title);
 }
 

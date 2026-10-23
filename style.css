@@ -536,5 +536,3 @@ html, body {
   75% { transform: translateX(6px); }
 }
 
-#loadStatus { color: white; background: #222; font-size: 12px; text-align: center; }
-#loadStatus:not(:empty) { padding: 8px; }
