@@ -1,5 +1,5 @@
 // ===== 配置 =====
-const MAX_POPUPS = 8;          // 最多弹窗数量
+const MAX_POPUPS = 15;         // 最多弹窗数量
 
 // 广告弹窗标题池（可自行修改）
 const AD_TITLES = [
