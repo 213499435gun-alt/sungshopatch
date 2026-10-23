@@ -13,13 +13,16 @@ html, body {
   background: #000;
 }
 
-/* ===== 页面容器：铺满整个屏幕 ===== */
+/* ===== 横屏画布：固定 1280x720 逻辑尺寸，由 JS 旋转+缩放适配屏幕 ===== */
 #rotateWrap {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 1280px;
+  height: 720px;
+  transform-origin: top left;
+  transform: scale(1);
+  /* 旋转与缩放由 JS 根据屏幕方向动态计算 */
 }
 
 /* ===== 桌面：经典蓝天草地壁纸 ===== */
@@ -183,8 +186,8 @@ html, body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  /* 宽度同时受屏幕宽、高约束：用 vh 反推，保证整体不撑满屏幕 */
-  width: min(720px, 70vw, 70%, 130vh);
+  /* 画布固定 1280x720，播放器用固定宽度，整体随画布缩放 */
+  width: 720px;
   background: #d4d0c8;
   /* 经典 3D 立体银色边框 */
   border: 2px solid;
@@ -195,40 +198,6 @@ html, body {
     0 12px 40px rgba(0, 0, 0, 0.5);
   padding: 3px;
   z-index: 10;
-}
-
-/* 手机横屏（矮屏）：播放器缩小，避免占满屏幕 */
-@media (max-height: 500px) {
-  .player-window {
-    width: min(60vw, 100vh);
-  }
-  .player-titlebar {
-    font-size: 10px;
-    padding: 2px 2px 2px 4px;
-  }
-  .ctrl-btn {
-    width: 14px;
-    height: 12px;
-    font-size: 8px;
-  }
-  .player-controls {
-    padding: 3px 6px 4px;
-  }
-  .control-row {
-    gap: 8px;
-    font-size: 11px;
-  }
-  .control-row .time {
-    font-size: 9px;
-  }
-  .progress-bar {
-    height: 4px;
-    margin-bottom: 3px;
-  }
-  .play-btn svg {
-    width: 44px;
-    height: 44px;
-  }
 }
 
 .player-titlebar {

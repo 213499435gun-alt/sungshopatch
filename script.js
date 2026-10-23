@@ -71,27 +71,25 @@ function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// ===== 生成随机位置（保证在屏幕内，且避开中央播放按钮）=====
+// ===== 生成随机位置（保证在画布内，且避开中央播放按钮）=====
+// 注意：弹窗的 left/top 是画布内的逻辑坐标（未受 transform 影响），
+// 所以这里必须用逻辑尺寸（offsetWidth/offsetLeft），不能用 getBoundingClientRect。
 function randomPosition(w, h) {
   const desktop = document.getElementById("desktop");
-  const areaW = desktop ? desktop.clientWidth : window.innerWidth;
-  const areaH = desktop ? desktop.clientHeight : window.innerHeight;
+  const areaW = desktop ? desktop.offsetWidth : CANVAS_W;
+  const areaH = desktop ? desktop.offsetHeight : CANVAS_H;
   const maxX = areaW - w - 10;
   const maxY = areaH - h - 50; // 留出任务栏
 
-  // 播放按钮所在区域（屏幕中央），弹窗要避开它，否则会挡住按钮导致点不动
+  // 播放器在画布内是居中的，用逻辑坐标算出它的区域
   const player = document.getElementById("player");
   let avoid = null;
   if (player) {
-    const pr = player.getBoundingClientRect();
-    const dr = desktop.getBoundingClientRect();
-    // 转成相对 desktop 的坐标
-    avoid = {
-      left: pr.left - dr.left,
-      top: pr.top - dr.top,
-      right: pr.right - dr.left,
-      bottom: pr.bottom - dr.top,
-    };
+    const pw = player.offsetWidth;
+    const ph = player.offsetHeight;
+    const pl = (areaW - pw) / 2;
+    const pt = (areaH - ph) / 2;
+    avoid = { left: pl, top: pt, right: pl + pw, bottom: pt + ph };
   }
 
   // 尝试多次找一个不与播放器重叠的位置
@@ -99,7 +97,6 @@ function randomPosition(w, h) {
     const x = Math.max(10, randInt(10, Math.max(10, maxX)));
     const y = Math.max(10, randInt(10, Math.max(10, maxY)));
     if (!avoid) return { x, y };
-    // 判断弹窗矩形是否与播放器矩形重叠
     const overlap =
       x < avoid.right &&
       x + w > avoid.left &&
@@ -218,6 +215,51 @@ window.addEventListener("resize", () => {
     if (left > maxX) p.style.left = Math.max(10, maxX) + "px";
     if (top > maxY) p.style.top = Math.max(10, maxY) + "px";
   });
+});
+
+// ===== 横屏画布适配：竖屏时旋转 90° + 等比缩放铺满屏幕 =====
+const rotateWrap = document.getElementById("rotateWrap");
+const CANVAS_W = 1280;
+const CANVAS_H = 720;
+
+function fitCanvas() {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  if (vh > vw) {
+    // 竖屏：旋转 90°，让横屏画布铺满竖屏手机
+    // 旋转后画布的视觉尺寸：宽 = CANVAS_H，高 = CANVAS_W
+    const s = Math.min(vw / CANVAS_H, vh / CANVAS_W);
+    // 旋转后画布视觉宽高
+    const shownW = CANVAS_H * s;
+    const shownH = CANVAS_W * s;
+    // 居中偏移
+    const offsetX = (vw - shownW) / 2;
+    const offsetY = (vh - shownH) / 2;
+    // transform-origin: top left
+    // 先平移到居中位置，再旋转 90°，再缩放
+    // 旋转 90° 后内容会转到左下方，需要 translateY(-CANVAS_W*s) 拉回
+    rotateWrap.style.transform =
+      "translate(" + offsetX + "px, " + offsetY + "px) " +
+      "rotate(90deg) " +
+      "translate(0px, " + (-CANVAS_W * s) + "px) " +
+      "scale(" + s + ")";
+  } else {
+    // 横屏：正常等比缩放居中
+    const s = Math.min(vw / CANVAS_W, vh / CANVAS_H);
+    const shownW = CANVAS_W * s;
+    const shownH = CANVAS_H * s;
+    const offsetX = (vw - shownW) / 2;
+    const offsetY = (vh - shownH) / 2;
+    rotateWrap.style.transform =
+      "translate(" + offsetX + "px, " + offsetY + "px) scale(" + s + ")";
+  }
+}
+
+fitCanvas();
+window.addEventListener("resize", fitCanvas);
+window.addEventListener("orientationchange", () => {
+  setTimeout(fitCanvas, 100);
 });
 
 
