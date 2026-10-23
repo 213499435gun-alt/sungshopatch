@@ -33,6 +33,29 @@ let popupZIndex = 1;   // 弹窗递增层级，后创建的在上层
 const popupLayer = document.getElementById("popupLayer");
 const playBtn = document.getElementById("playBtn");
 
+// ===== GIF 播放数量限制（手机上同时播放太多 GIF 会卡）=====
+const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+const MAX_ANIMATED = isMobile ? 3 : 99;  // 手机上最多同时播放 3 个 GIF
+let animatedCount = 0;                    // 当前正在播放的 GIF 数量
+const staticFrameCache = {};              // 静态首帧缓存（dataURL）
+
+// 把 GIF 的第一帧画到 canvas，返回静态图 dataURL（用于超出数量限制时显示）
+function getStaticFrame(img) {
+  const key = img.src;
+  if (staticFrameCache[key]) return staticFrameCache[key];
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    canvas.getContext("2d").drawImage(img, 0, 0);
+    const url = canvas.toDataURL("image/png");
+    staticFrameCache[key] = url;
+    return url;
+  } catch (e) {
+    return null;
+  }
+}
+
 // ===== 图片洗牌队列：一轮内不重复，全部用完后再重新洗牌 =====
 let imageQueue = [];
 
@@ -54,25 +77,29 @@ function nextImage() {
   return imageQueue.shift();
 }
 
-// ===== 预加载所有广告图片 =====
-// 等页面首屏加载完再预加载，避免和首屏渲染抢网络/CPU
+// ===== 图片加载（按需，不一次性预加载全部，避免手机卡顿）=====
 const preloadedImages = {};
-function preloadImages() {
-  AD_IMAGES.forEach((src) => {
-    const im = new Image();
-    im.src = src;
-    preloadedImages[src] = im;
-    // decode() 提前解码，避免首次显示时白屏
-    if (im.decode) {
-      im.decode().catch(() => {});
-    }
+
+// 获取图片对象：已加载则直接返回，否则创建并开始加载
+function getImage(src) {
+  if (preloadedImages[src]) return preloadedImages[src];
+  const im = new Image();
+  im.src = src;
+  preloadedImages[src] = im;
+  return im;
+}
+
+// 页面加载完成后，只预加载前 2 张（其余用到时再加载）
+function preloadFirstFew() {
+  AD_IMAGES.slice(0, 2).forEach((src) => {
+    const im = getImage(src);
+    if (im.decode) im.decode().catch(() => {});
   });
 }
-// 页面加载完成后再预加载（不阻塞首屏）
 if (document.readyState === "complete") {
-  preloadImages();
+  preloadFirstFew();
 } else {
-  window.addEventListener("load", preloadImages);
+  window.addEventListener("load", preloadFirstFew);
 }
 
 // ===== 时钟 =====
@@ -92,7 +119,7 @@ function randInt(min, max) {
 
 // ===== 生成随机位置（优先四角/边缘，逐渐向中间，且避开中央播放器）=====
 // 注意：弹窗的 left/top 是画布内的逻辑坐标（未受 transform 影响），
-// 所以这里必须用逻辑尺寸（offsetWidth/offsetLeft），不能用 getBoundingClientRect。
+// 所以这里必须用逻辑尺寸（offsetWidth/offsetLeft），不好愤怒能用 getBoundingClientRect。
 function randomPosition(w, h) {
   const desktop = document.getElementById("desktop");
   const areaW = desktop ? desktop.offsetWidth : 1280;
@@ -128,10 +155,10 @@ function randomPosition(w, h) {
   // 到中心的最大可能距离（用于归一化）
   const maxDist = Math.sqrt(cx * cx + cy * cy);
 
-  // 生成大量候选点，选"离中心最远"的（即最靠边/角的），同时避开播放器
+  // 生成候选点，选"离中心最远"的（即最靠边/角的），同时避开播放器
   let best = null;
   let bestScore = -1;
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 30; i++) {
     const x = randInt(margin, Math.max(margin, maxX));
     const y = randInt(margin, Math.max(margin, maxY));
     if (overlaps(x, y)) continue;
@@ -164,22 +191,14 @@ function createAdPopup() {
 
   // 选图：从洗牌队列取，一轮内不重复，用完再重新洗牌
   const imgSrc = nextImage();
-  const cached = preloadedImages[imgSrc];
+  const img = getImage(imgSrc);
 
-  // 确保图片已解码完成再显示，避免白屏
-  const ready = cached && cached.complete && cached.naturalWidth > 0;
-  if (ready && cached.decode) {
-    cached.decode().then(() => buildPopup(cached, title)).catch(() => {
-      buildPopup(cached, title);
-    });
-  } else if (ready) {
-    buildPopup(cached, title);
+  // 图片已就绪则直接构建，否则等加载完成
+  if (img.complete && img.naturalWidth > 0) {
+    buildPopup(img, title);
   } else {
-    // 兜底：还没加载完，等加载完成再创建
-    const img = cached || new Image();
     img.onload = () => buildPopup(img, title);
     img.onerror = () => console.warn("广告图片加载失败：", imgSrc);
-    if (!cached) img.src = imgSrc;
   }
 }
 
@@ -232,10 +251,31 @@ function buildPopup(img, title) {
   `;
 
   const body = popup.querySelector(".ad-body");
-  // 克隆图片节点，避免同一张图被多个弹窗复用时互相"抢走"导致变白
-  const imgEl = img.cloneNode();
-  imgEl.alt = title;
-  body.appendChild(imgEl);
+
+  // 判断是否 GIF
+  const isGif = /\.gif$/i.test(img.src);
+  // 手机上 GIF 播放数量超限时，显示静态首帧，避免卡顿
+  if (isGif && animatedCount >= MAX_ANIMATED) {
+    const staticUrl = getStaticFrame(img);
+    if (staticUrl) {
+      const imgEl = document.createElement("img");
+      imgEl.src = staticUrl;
+      imgEl.alt = title;
+      body.appendChild(imgEl);
+    } else {
+      // 截帧失败则退回动图
+      const imgEl = img.cloneNode();
+      imgEl.alt = title;
+      body.appendChild(imgEl);
+      animatedCount++;
+    }
+  } else {
+    // 克隆图片节点，避免同一张图被多个弹窗复用时互相"抢走"导致变白
+    const imgEl = img.cloneNode();
+    imgEl.alt = title;
+    body.appendChild(imgEl);
+    if (isGif) animatedCount++;
+  }
 
   // 关闭按钮：关不掉，反而跳到别的位置
   const closeBtn = popup.querySelector(".ad-close");
@@ -257,10 +297,11 @@ function movePopup(popup) {
   popup.style.left = x + "px";
   popup.style.top = y + "px";
 
-  // 抖动一下
+  // 抖动一下（用 requestAnimationFrame 避免强制同步重排）
   popup.classList.remove("shake");
-  void popup.offsetWidth; // 触发重排以重启动画
-  popup.classList.add("shake");
+  requestAnimationFrame(() => {
+    popup.classList.add("shake");
+  });
 }
 
 // ===== 点击播放按钮 =====

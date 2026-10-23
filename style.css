@@ -464,13 +464,15 @@ html, body {
   position: absolute;
   background: transparent;
   border: none;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   pointer-events: auto;
   overflow: visible;
   transform-origin: top left;
   animation: popIn 0.12s ease-out;
   display: flex;
   flex-direction: column;
+  /* 提示浏览器用 GPU 合成，减少重绘 */
+  will-change: transform;
 }
 
 @keyframes popIn {
