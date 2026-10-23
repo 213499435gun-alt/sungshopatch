@@ -56,31 +56,6 @@ function nextImage() {
   return imageQueue.shift();
 }
 
-// ===== 图片加载（按需，不一次性预加载全部，避免手机卡顿）=====
-const preloadedImages = {};
-
-// 获取图片对象：已加载则直接返回，否则创建并开始加载
-function getImage(src) {
-  if (preloadedImages[src]) return preloadedImages[src];
-  const im = new Image();
-  im.src = src;
-  preloadedImages[src] = im;
-  return im;
-}
-
-// 页面加载完成后，只预加载前 2 张（其余用到时再加载）
-function preloadFirstFew() {
-  AD_IMAGES.slice(0, 2).forEach((src) => {
-    const im = getImage(src);
-    if (im.decode) im.decode().catch(() => {});
-  });
-}
-if (document.readyState === "complete") {
-  preloadFirstFew();
-} else {
-  window.addEventListener("load", preloadFirstFew);
-}
-
 // ===== 时钟 =====
 function updateClock() {
   const now = new Date();
@@ -170,23 +145,12 @@ function createAdPopup() {
 
   // 选图：从洗牌队列取，一轮内不重复，用完再重新洗牌
   const imgSrc = nextImage();
-  const img = getImage(imgSrc);
-
-  // 图片已就绪则直接构建
-  if (img.complete && img.naturalWidth > 0) {
-    buildPopup(img, title);
-    return;
-  }
-  // 否则等加载完成（用 addEventListener 避免覆盖已有回调）
-  const onReady = () => buildPopup(img, title);
-  img.addEventListener("load", onReady, { once: true });
-  img.addEventListener("error", () => {
-    console.warn("广告图片加载失败：", imgSrc);
-  }, { once: true });
+  // 立即创建弹窗，不让慢速或失败的图片请求阻塞点击反馈。
+  buildPopup(imgSrc, title);
 }
 
 // ===== 用图片真实尺寸构建弹窗 =====
-function buildPopup(img, title) {
+function buildPopup(imgSrc, title) {
   const desktop = document.getElementById("desktop");
   const areaW = desktop ? desktop.offsetWidth : 1280;
   const areaH = desktop ? desktop.offsetHeight : 720;
@@ -207,7 +171,7 @@ function buildPopup(img, title) {
     maxH = areaH * MAX_H_RATIO;
   }
 
-  const ratio = img.naturalWidth / img.naturalHeight;
+  const ratio = 1;
   let w = maxW;
   let h = w / ratio;
   if (h > maxH) {
@@ -235,9 +199,20 @@ function buildPopup(img, title) {
 
   const body = popup.querySelector(".ad-body");
   // 克隆图片节点，避免同一张图被多个弹窗复用时互相"抢走"导致变白
-  const imgEl = img.cloneNode();
+  const imgEl = new Image();
   imgEl.alt = title;
-  body.appendChild(imgEl);
+  body.textContent = "图片加载中…";
+  imgEl.addEventListener("load", () => {
+    const ratio = imgEl.naturalWidth / imgEl.naturalHeight;
+    const width = Math.min(maxW, maxH * ratio);
+    popup.style.width = Math.round(width) + "px";
+    popup.style.height = Math.round(width / ratio) + "px";
+    body.replaceChildren(imgEl);
+  }, { once: true });
+  imgEl.addEventListener("error", () => {
+    body.textContent = title + "（图片暂时无法加载）";
+  }, { once: true });
+  imgEl.src = imgSrc;
 
   // 关闭按钮：关不掉，反而跳到别的位置
   const closeBtn = popup.querySelector(".ad-close");
@@ -288,7 +263,6 @@ window.addEventListener("resize", () => {
   });
 });
 
-// ===== 横屏适配由 CSS 媒体查询处理（见 style.css 的 @media portrait）=====
-// 竖屏时 #rotateWrap 旋转 90° 铺满，无需 JS 干预
+
 
 

@@ -28,8 +28,10 @@ html, body {
 @media (orientation: portrait) {
   #rotateWrap {
     /* 逻辑宽 = 屏幕高（填满），逻辑高 = 宽 * 10/16（16:10，不那么扁） */
+    width: 100vh;
+    height: 100vw;
     width: 100dvh;
-    height: calc(100dvh * 10 / 16);
+    height: 100dvw;
     /* 围绕中心旋转，配合 translate(-50%,-50%) 居中，旋转不会偏移 */
     transform-origin: center center;
     transform: translate(-50%, -50%) rotate(90deg);
@@ -278,6 +280,7 @@ html, body {
   background: none;
   border: none;
   cursor: pointer;
+  touch-action: manipulation;
   transition: transform 0.15s ease;
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6));
 }
@@ -472,7 +475,7 @@ html, body {
   display: flex;
   flex-direction: column;
   /* 提示浏览器用 GPU 合成，减少重绘 */
-  will-change: transform;
+
 }
 
 @keyframes popIn {
