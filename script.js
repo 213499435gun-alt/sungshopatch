@@ -1,7 +1,5 @@
 // ===== 配置 =====
-// 手机上同时播放太多 GIF 会卡，所以手机上限少一些
-const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-const MAX_POPUPS = isMobile ? 8 : 15;   // 最多弹窗数量
+const MAX_POPUPS = 15;
 
 // 广告弹窗标题池（可自行修改）
 const AD_TITLES = [
@@ -35,28 +33,14 @@ let popupZIndex = 1;   // 弹窗递增层级，后创建的在上层
 const popupLayer = document.getElementById("popupLayer");
 const playBtn = document.getElementById("playBtn");
 
-// ===== 图片洗牌队列：一轮内不重复，全部用完后再重新洗牌 =====
-
-// 洗牌函数（Fisher-Yates）
-function shuffle(arr) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-// 每轮优先展示尚未出现过的素材，慢加载图片不会被跳过。
-const shownImages = new Set();
+// 优先选择屏幕上出现次数最少的素材；未加载完也不阻塞后续点击。
+const imageUseCounts = new Map();
 function nextImage() {
-  let available = readyImages.filter(src => !shownImages.has(src));
-  if (!available.length && settledImages === AD_IMAGES.length) {
-    shownImages.clear();
-    available = readyImages.slice();
-  }
-  const src = shuffle(available)[0];
-  if (src) shownImages.add(src);
+  if (!readyImages.length) return undefined;
+  const minCount = Math.min(...readyImages.map(src => imageUseCounts.get(src) || 0));
+  const candidates = readyImages.filter(src => (imageUseCounts.get(src) || 0) === minCount);
+  const src = candidates[randInt(0, candidates.length - 1)];
+  imageUseCounts.set(src, minCount + 1);
   return src;
 }
 
@@ -191,7 +175,7 @@ function createAdPopup() {
   const idx = popupCount;
   const title = AD_TITLES[idx % AD_TITLES.length];
 
-  // 选图：从洗牌队列取，一轮内不重复，用完再重新洗牌
+  // 优先使用尚未显示的素材，再均匀分配重复素材
   const imgSrc = nextImage();
   if (!imgSrc) {
     pendingPopup = settledImages < AD_IMAGES.length;
