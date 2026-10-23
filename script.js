@@ -217,47 +217,7 @@ window.addEventListener("resize", () => {
   });
 });
 
-// ===== 横屏画布适配：竖屏时旋转 90° + 等比缩放铺满屏幕 =====
-const rotateWrap = document.getElementById("rotateWrap");
-const CANVAS_W = 1280;
-const CANVAS_H = 720;
-
-function fitCanvas() {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-
-  // 先重置到左上角、无偏移，只做旋转+缩放
-  rotateWrap.style.left = "0px";
-  rotateWrap.style.top = "0px";
-
-  if (vh > vw) {
-    // 竖屏：旋转 90°，让横屏画布铺满竖屏手机
-    const s = Math.min(vw / CANVAS_H, vh / CANVAS_W);
-    rotateWrap.style.transform = "rotate(90deg) scale(" + s + ")";
-
-    // 自校准：实测旋转后元素实际占据的屏幕区域，反推偏移让它居中
-    const rect = rotateWrap.getBoundingClientRect();
-    const dx = (vw - rect.width) / 2 - rect.left;
-    const dy = (vh - rect.height) / 2 - rect.top;
-    rotateWrap.style.left = dx + "px";
-    rotateWrap.style.top = dy + "px";
-  } else {
-    // 横屏：正常等比缩放居中
-    const s = Math.min(vw / CANVAS_W, vh / CANVAS_H);
-    rotateWrap.style.transform = "scale(" + s + ")";
-
-    const rect = rotateWrap.getBoundingClientRect();
-    const dx = (vw - rect.width) / 2 - rect.left;
-    const dy = (vh - rect.height) / 2 - rect.top;
-    rotateWrap.style.left = dx + "px";
-    rotateWrap.style.top = dy + "px";
-  }
-}
-
-fitCanvas();
-window.addEventListener("resize", fitCanvas);
-window.addEventListener("orientationchange", () => {
-  setTimeout(fitCanvas, 100);
-});
+// ===== 横屏适配由 CSS 媒体查询处理（见 style.css 的 @media portrait）=====
+// 竖屏时 #rotateWrap 旋转 90° 铺满，无需 JS 干预
 
 
