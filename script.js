@@ -81,7 +81,7 @@ function loadImage(src) {
       img.src = src;
     };
     img.src = src.startsWith("assets/")
-      ? src.replace("assets/", "assets/optimized/").replace(/\.(gif|jpg|png)$/i, ".webp")
+      ? src.replace("assets/", "assets/optimized/").replace(/\.(gif|jpg|png)$/i, ".webp") + "?v=24"
       : src;
   });
 }
