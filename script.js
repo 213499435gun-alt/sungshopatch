@@ -228,21 +228,19 @@ function fitCanvas() {
 
   if (vh > vw) {
     // 竖屏：旋转 90°，让横屏画布铺满竖屏手机
-    // 旋转后画布的视觉尺寸：宽 = CANVAS_H，高 = CANVAS_W
+    // 旋转后画布视觉尺寸：宽 = CANVAS_H，高 = CANVAS_W
     const s = Math.min(vw / CANVAS_H, vh / CANVAS_W);
-    // 旋转后画布视觉宽高
-    const shownW = CANVAS_H * s;
-    const shownH = CANVAS_W * s;
-    // 居中偏移
+    const shownW = CANVAS_H * s; // 旋转后视觉宽
+    const shownH = CANVAS_W * s; // 旋转后视觉高
     const offsetX = (vw - shownW) / 2;
     const offsetY = (vh - shownH) / 2;
-    // transform-origin: top left
-    // 先平移到居中位置，再旋转 90°，再缩放
-    // 旋转 90° 后内容会转到左下方，需要 translateY(-CANVAS_W*s) 拉回
+
+    // transform-origin: top left，变换从右往左应用：scale → rotate → translate
+    // 顺时针旋转 90° 后，画布占据 x∈[0, CANVAS_H]、y∈[-CANVAS_W, 0]（在原点右上方）
+    // 所以需要向下平移 CANVAS_W*s 把它拉回，再加居中偏移
     rotateWrap.style.transform =
-      "translate(" + offsetX + "px, " + offsetY + "px) " +
+      "translate(" + offsetX + "px, " + (offsetY + CANVAS_W * s) + "px) " +
       "rotate(90deg) " +
-      "translate(0px, " + (-CANVAS_W * s) + "px) " +
       "scale(" + s + ")";
   } else {
     // 横屏：正常等比缩放居中
