@@ -22,13 +22,34 @@ const AD_IMAGES = [
   "assets/cb2990c259045d0ca38041491108568b.JPG",
 ];
 
-// 弹窗最大显示尺寸（宽 x 高，单位 px）—— 图片会等比缩放到这个范围内
-const MAX_W = 420;
-const MAX_H = 360;
+// 弹窗最大显示尺寸占画布的比例（相对画布宽高，手机上会自动变小）
+const MAX_W_RATIO = 0.28;   // 弹窗最大宽度 = 画布宽 * 0.28
+const MAX_H_RATIO = 0.42;   // 弹窗最大高度 = 画布高 * 0.42
 
 let popupCount = 0;
 const popupLayer = document.getElementById("popupLayer");
 const playBtn = document.getElementById("playBtn");
+
+// ===== 图片洗牌队列：一轮内不重复，全部用完后再重新洗牌 =====
+let imageQueue = [];
+
+// 洗牌函数（Fisher-Yates）
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// 取下一张图：队列空了就重新洗牌
+function nextImage() {
+  if (imageQueue.length === 0) {
+    imageQueue = shuffle(AD_IMAGES);
+  }
+  return imageQueue.shift();
+}
 
 // ===== 预加载所有广告图片 =====
 // 页面加载时就把图片全部下载并解码进内存，点击时直接从缓存取，弹窗瞬间出现
@@ -71,14 +92,15 @@ function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// ===== 生成随机位置（保证在画布内，且避开中央播放按钮）=====
+// ===== 生成随机位置（优先四角/边缘，逐渐向中间，且避开中央播放器）=====
 // 注意：弹窗的 left/top 是画布内的逻辑坐标（未受 transform 影响），
 // 所以这里必须用逻辑尺寸（offsetWidth/offsetLeft），不能用 getBoundingClientRect。
 function randomPosition(w, h) {
   const desktop = document.getElementById("desktop");
-  const areaW = desktop ? desktop.offsetWidth : CANVAS_W;
-  const areaH = desktop ? desktop.offsetHeight : CANVAS_H;
-  const maxX = areaW - w - 10;
+  const areaW = desktop ? desktop.offsetWidth : 1280;
+  const areaH = desktop ? desktop.offsetHeight : 720;
+  const margin = 10;
+  const maxX = areaW - w - margin;
   const maxY = areaH - h - 50; // 留出任务栏
 
   // 播放器在画布内是居中的，用逻辑坐标算出它的区域
@@ -92,22 +114,46 @@ function randomPosition(w, h) {
     avoid = { left: pl, top: pt, right: pl + pw, bottom: pt + ph };
   }
 
-  // 尝试多次找一个不与播放器重叠的位置
-  for (let i = 0; i < 30; i++) {
-    const x = Math.max(10, randInt(10, Math.max(10, maxX)));
-    const y = Math.max(10, randInt(10, Math.max(10, maxY)));
-    if (!avoid) return { x, y };
-    const overlap =
+  function overlaps(x, y) {
+    if (!avoid) return false;
+    return (
       x < avoid.right &&
       x + w > avoid.left &&
       y < avoid.bottom &&
-      y + h > avoid.top;
-    if (!overlap) return { x, y };
+      y + h > avoid.top
+    );
   }
-  // 实在找不到就返回随机位置
+
+  // 画布中心
+  const cx = areaW / 2;
+  const cy = areaH / 2;
+  // 到中心的最大可能距离（用于归一化）
+  const maxDist = Math.sqrt(cx * cx + cy * cy);
+
+  // 生成大量候选点，选"离中心最远"的（即最靠边/角的），同时避开播放器
+  let best = null;
+  let bestScore = -1;
+  for (let i = 0; i < 60; i++) {
+    const x = Math.max(margin, randInt(margin, Math.max(margin, maxX)));
+    const y = Math.max(margin, randInt(margin, Math.max(margin, maxY)));
+    if (overlaps(x, y)) continue;
+    // 弹窗中心到画布中心的距离
+    const px = x + w / 2;
+    const py = y + h / 2;
+    const dist = Math.sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy));
+    // 归一化距离 + 少量随机，避免每次都固定同一角
+    const score = dist / maxDist + Math.random() * 0.15;
+    if (score > bestScore) {
+      bestScore = score;
+      best = { x, y };
+    }
+  }
+  if (best) return best;
+
+  // 兜底：所有候选都重叠播放器，就返回随机位置
   return {
-    x: Math.max(10, randInt(10, Math.max(10, maxX))),
-    y: Math.max(10, randInt(10, Math.max(10, maxY))),
+    x: Math.max(margin, randInt(margin, Math.max(margin, maxX))),
+    y: Math.max(margin, randInt(margin, Math.max(margin, maxY))),
   };
 }
 
@@ -117,7 +163,9 @@ function createAdPopup() {
 
   const idx = popupCount;
   const title = AD_TITLES[idx % AD_TITLES.length];
-  const imgSrc = AD_IMAGES[randInt(0, AD_IMAGES.length - 1)];
+
+  // 选图：从洗牌队列取，一轮内不重复，用完再重新洗牌
+  const imgSrc = nextImage();
   const cached = preloadedImages[imgSrc];
 
   // 确保图片已解码完成再显示，避免白屏
@@ -139,11 +187,19 @@ function createAdPopup() {
 
 // ===== 用图片真实尺寸构建弹窗 =====
 function buildPopup(img, title) {
+  const desktop = document.getElementById("desktop");
+  const areaW = desktop ? desktop.offsetWidth : 1280;
+  const areaH = desktop ? desktop.offsetHeight : 720;
+
+  // 弹窗最大尺寸按画布比例算，手机上画布小，弹窗自动变小
+  const maxW = areaW * MAX_W_RATIO;
+  const maxH = areaH * MAX_H_RATIO;
+
   const ratio = img.naturalWidth / img.naturalHeight;
-  let w = MAX_W;
+  let w = maxW;
   let h = w / ratio;
-  if (h > MAX_H) {
-    h = MAX_H;
+  if (h > maxH) {
+    h = maxH;
     w = h * ratio;
   }
   w = Math.round(w);

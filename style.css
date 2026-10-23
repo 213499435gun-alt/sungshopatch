@@ -81,23 +81,13 @@ html, body {
   position: relative;
 }
 
-/* 回收站 */
+/* 回收站（垃圾桶 emoji） */
 .icon-recycle {
-  background: linear-gradient(180deg, #d8d8d8, #a0a0a0);
-  border: 2px solid #888;
-  border-radius: 4px 4px 6px 6px;
-  box-shadow: inset 0 2px 3px rgba(255,255,255,0.6), 0 2px 4px rgba(0,0,0,0.4);
-}
-.icon-recycle::before {
-  content: "";
-  position: absolute;
-  top: -4px;
-  left: 6px;
-  width: 24px;
-  height: 6px;
-  background: #b0b0b0;
-  border: 2px solid #888;
-  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  line-height: 1;
 }
 
 /* 我的电脑 */
