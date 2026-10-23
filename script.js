@@ -226,31 +226,31 @@ function fitCanvas() {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
 
+  // 先重置到左上角、无偏移，只做旋转+缩放
+  rotateWrap.style.left = "0px";
+  rotateWrap.style.top = "0px";
+
   if (vh > vw) {
     // 竖屏：旋转 90°，让横屏画布铺满竖屏手机
-    // 旋转后画布视觉尺寸：宽 = CANVAS_H，高 = CANVAS_W
     const s = Math.min(vw / CANVAS_H, vh / CANVAS_W);
-    const shownW = CANVAS_H * s; // 旋转后视觉宽
-    const shownH = CANVAS_W * s; // 旋转后视觉高
-    const offsetX = (vw - shownW) / 2;
-    const offsetY = (vh - shownH) / 2;
+    rotateWrap.style.transform = "rotate(90deg) scale(" + s + ")";
 
-    // transform-origin: top left，变换从右往左应用：scale → rotate → translate
-    // 顺时针旋转 90° 后，画布占据 x∈[0, CANVAS_H]、y∈[-CANVAS_W, 0]（在原点右上方）
-    // 所以需要向下平移 CANVAS_W*s 把它拉回，再加居中偏移
-    rotateWrap.style.transform =
-      "translate(" + offsetX + "px, " + (offsetY + CANVAS_W * s) + "px) " +
-      "rotate(90deg) " +
-      "scale(" + s + ")";
+    // 自校准：实测旋转后元素实际占据的屏幕区域，反推偏移让它居中
+    const rect = rotateWrap.getBoundingClientRect();
+    const dx = (vw - rect.width) / 2 - rect.left;
+    const dy = (vh - rect.height) / 2 - rect.top;
+    rotateWrap.style.left = dx + "px";
+    rotateWrap.style.top = dy + "px";
   } else {
     // 横屏：正常等比缩放居中
     const s = Math.min(vw / CANVAS_W, vh / CANVAS_H);
-    const shownW = CANVAS_W * s;
-    const shownH = CANVAS_H * s;
-    const offsetX = (vw - shownW) / 2;
-    const offsetY = (vh - shownH) / 2;
-    rotateWrap.style.transform =
-      "translate(" + offsetX + "px, " + offsetY + "px) scale(" + s + ")";
+    rotateWrap.style.transform = "scale(" + s + ")";
+
+    const rect = rotateWrap.getBoundingClientRect();
+    const dx = (vw - rect.width) / 2 - rect.left;
+    const dy = (vh - rect.height) / 2 - rect.top;
+    rotateWrap.style.left = dx + "px";
+    rotateWrap.style.top = dy + "px";
   }
 }
 
