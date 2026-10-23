@@ -1,5 +1,7 @@
 // ===== 配置 =====
-const MAX_POPUPS = 15;         // 最多弹窗数量
+// 手机上同时播放太多 GIF 会卡，所以手机上限少一些
+const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+const MAX_POPUPS = isMobile ? 8 : 15;   // 最多弹窗数量
 
 // 广告弹窗标题池（可自行修改）
 const AD_TITLES = [
@@ -32,29 +34,6 @@ let popupCount = 0;
 let popupZIndex = 1;   // 弹窗递增层级，后创建的在上层
 const popupLayer = document.getElementById("popupLayer");
 const playBtn = document.getElementById("playBtn");
-
-// ===== GIF 播放数量限制（手机上同时播放太多 GIF 会卡）=====
-const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-const MAX_ANIMATED = isMobile ? 3 : 99;  // 手机上最多同时播放 3 个 GIF
-let animatedCount = 0;                    // 当前正在播放的 GIF 数量
-const staticFrameCache = {};              // 静态首帧缓存（dataURL）
-
-// 把 GIF 的第一帧画到 canvas，返回静态图 dataURL（用于超出数量限制时显示）
-function getStaticFrame(img) {
-  const key = img.src;
-  if (staticFrameCache[key]) return staticFrameCache[key];
-  try {
-    const canvas = document.createElement("canvas");
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    canvas.getContext("2d").drawImage(img, 0, 0);
-    const url = canvas.toDataURL("image/png");
-    staticFrameCache[key] = url;
-    return url;
-  } catch (e) {
-    return null;
-  }
-}
 
 // ===== 图片洗牌队列：一轮内不重复，全部用完后再重新洗牌 =====
 let imageQueue = [];
@@ -193,13 +172,17 @@ function createAdPopup() {
   const imgSrc = nextImage();
   const img = getImage(imgSrc);
 
-  // 图片已就绪则直接构建，否则等加载完成
+  // 图片已就绪则直接构建
   if (img.complete && img.naturalWidth > 0) {
     buildPopup(img, title);
-  } else {
-    img.onload = () => buildPopup(img, title);
-    img.onerror = () => console.warn("广告图片加载失败：", imgSrc);
+    return;
   }
+  // 否则等加载完成（用 addEventListener 避免覆盖已有回调）
+  const onReady = () => buildPopup(img, title);
+  img.addEventListener("load", onReady, { once: true });
+  img.addEventListener("error", () => {
+    console.warn("广告图片加载失败：", imgSrc);
+  }, { once: true });
 }
 
 // ===== 用图片真实尺寸构建弹窗 =====
@@ -251,31 +234,10 @@ function buildPopup(img, title) {
   `;
 
   const body = popup.querySelector(".ad-body");
-
-  // 判断是否 GIF
-  const isGif = /\.gif$/i.test(img.src);
-  // 手机上 GIF 播放数量超限时，显示静态首帧，避免卡顿
-  if (isGif && animatedCount >= MAX_ANIMATED) {
-    const staticUrl = getStaticFrame(img);
-    if (staticUrl) {
-      const imgEl = document.createElement("img");
-      imgEl.src = staticUrl;
-      imgEl.alt = title;
-      body.appendChild(imgEl);
-    } else {
-      // 截帧失败则退回动图
-      const imgEl = img.cloneNode();
-      imgEl.alt = title;
-      body.appendChild(imgEl);
-      animatedCount++;
-    }
-  } else {
-    // 克隆图片节点，避免同一张图被多个弹窗复用时互相"抢走"导致变白
-    const imgEl = img.cloneNode();
-    imgEl.alt = title;
-    body.appendChild(imgEl);
-    if (isGif) animatedCount++;
-  }
+  // 克隆图片节点，避免同一张图被多个弹窗复用时互相"抢走"导致变白
+  const imgEl = img.cloneNode();
+  imgEl.alt = title;
+  body.appendChild(imgEl);
 
   // 关闭按钮：关不掉，反而跳到别的位置
   const closeBtn = popup.querySelector(".ad-close");
