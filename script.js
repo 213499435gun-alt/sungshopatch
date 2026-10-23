@@ -20,6 +20,8 @@ const AD_IMAGES = [
   "assets/2600.PNG",
   "assets/76c8db04842bf7bd9ab88981148d4863.JPG",
   "assets/cb2990c259045d0ca38041491108568b.JPG",
+  "assets/IMG_1624.GIF",
+  "assets/IMG_9526.GIF",
 ];
 
 // 弹窗最大显示尺寸占画布的比例（相对画布宽高，手机上会自动变小）
