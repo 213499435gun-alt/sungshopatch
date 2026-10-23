@@ -61,8 +61,7 @@ const imageCache = new Map();
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.onload = async () => {
-      try { if (img.decode) await img.decode(); } catch (_) {}
+    img.onload = () => {
       imageCache.set(src, img);
       resolve(img);
     };
@@ -80,16 +79,25 @@ function loadImage(src) {
 playBtn.disabled = true;
 playBtn.setAttribute("aria-label", "素材加载中");
 const readyImages = [];
+let settledImages = 0;
 Promise.all(AD_IMAGES.map(async (src) => {
   try {
     await loadImage(src);
     readyImages.push(src);
-    // 第一张就绪就允许播放，其余素材继续后台加载。
-    playBtn.disabled = false;
-    playBtn.setAttribute("aria-label", "播放");
   } catch (_) { console.warn("图片加载失败：", src); }
+  finally {
+    settledImages++;
+    const status = `素材加载中 ${settledImages}/${AD_IMAGES.length}`;
+    playBtn.setAttribute("aria-label", status);
+    playBtn.title = status;
+  }
 })).then(() => {
-  if (!readyImages.length) playBtn.setAttribute("aria-label", "素材加载失败，请刷新重试");
+  // 等整组请求结束后再生成第一轮，避免慢加载素材错过有限的弹窗名额。
+  imageQueue = shuffle(readyImages);
+  playBtn.disabled = !readyImages.length;
+  const status = readyImages.length ? "播放" : "素材加载失败，请刷新重试";
+  playBtn.setAttribute("aria-label", status);
+  playBtn.title = status;
 });
 
 // 封面与壁纸准备好后，一起显示桌面，避免 UI 和图片分批出现。
