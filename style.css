@@ -22,13 +22,19 @@ html, body {
   height: 100%;
 }
 
-/* 竖屏设备：整体旋转 90°，强制横屏铺满（纯 CSS，用原生 vh/vw 单位） */
+/* 竖屏设备：整体旋转 90°，横屏显示
+   宽度填满屏幕高，高度按 16:10 比例（不那么扁），居中显示
+   用 dvh/dvw（动态视口，排除浏览器地址栏），避免底部地址栏挡住内容 */
 @media (orientation: portrait) {
   #rotateWrap {
-    width: 100vh;
-    height: 100vw;
-    transform-origin: top left;
-    transform: rotate(90deg) translateY(-100vw);
+    /* 逻辑宽 = 屏幕高（填满），逻辑高 = 宽 * 10/16（16:10，不那么扁） */
+    width: 100dvh;
+    height: calc(100dvh * 10 / 16);
+    /* 围绕中心旋转，配合 translate(-50%,-50%) 居中，旋转不会偏移 */
+    transform-origin: center center;
+    transform: translate(-50%, -50%) rotate(90deg);
+    left: 50%;
+    top: 50%;
   }
 }
 

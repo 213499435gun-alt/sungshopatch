@@ -27,6 +27,7 @@ const MAX_W_RATIO = 0.28;   // 弹窗最大宽度 = 画布宽 * 0.28
 const MAX_H_RATIO = 0.42;   // 弹窗最大高度 = 画布高 * 0.42
 
 let popupCount = 0;
+let popupZIndex = 1;   // 弹窗递增层级，后创建的在上层
 const popupLayer = document.getElementById("popupLayer");
 const playBtn = document.getElementById("playBtn");
 
@@ -193,8 +194,8 @@ function buildPopup(img, title) {
   if (isPortrait) {
     // 屏幕短边（手机宽度）
     const shortSide = Math.min(window.innerWidth, window.innerHeight);
-    // 弹窗在屏幕上占短边约 32%
-    const target = shortSide * 0.32;
+    // 弹窗在屏幕上占短边约 42%
+    const target = shortSide * 0.42;
     maxW = target;
     maxH = target;
   } else {
@@ -220,6 +221,8 @@ function buildPopup(img, title) {
   popup.style.height = h + "px";
   popup.style.left = x + "px";
   popup.style.top = y + "px";
+  // 递增层级：后创建的弹窗整体在上层，叉叉不会串到别的弹窗上
+  popup.style.zIndex = popupZIndex++;
 
   popup.innerHTML = `
     <span class="ad-close" title="关闭">✕</span>
