@@ -191,9 +191,21 @@ function buildPopup(img, title) {
   const areaW = desktop ? desktop.offsetWidth : 1280;
   const areaH = desktop ? desktop.offsetHeight : 720;
 
-  // 弹窗最大尺寸按画布比例算，手机上画布小，弹窗自动变小
-  const maxW = areaW * MAX_W_RATIO;
-  const maxH = areaH * MAX_H_RATIO;
+  // 竖屏手机：画布是 100vh x 100vw（实际像素，无缩放），
+  // 弹窗直接用较小的绝对像素，避免占满屏幕
+  const isPortrait = window.innerHeight > window.innerWidth;
+  let maxW, maxH;
+  if (isPortrait) {
+    // 屏幕短边（手机宽度）
+    const shortSide = Math.min(window.innerWidth, window.innerHeight);
+    // 弹窗在屏幕上占短边约 32%
+    const target = shortSide * 0.32;
+    maxW = target;
+    maxH = target;
+  } else {
+    maxW = areaW * MAX_W_RATIO;
+    maxH = areaH * MAX_H_RATIO;
+  }
 
   const ratio = img.naturalWidth / img.naturalHeight;
   let w = maxW;
