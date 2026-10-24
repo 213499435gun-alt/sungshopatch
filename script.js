@@ -22,6 +22,8 @@ const AD_IMAGES = [
   "assets/cb2990c259045d0ca38041491108568b.JPG",
   "assets/IMG_1624.GIF",
   "assets/IMG_9526.GIF",
+  "assets/WechatIMG775.jpeg",
+  "assets/WechatIMG776.jpeg",
 ];
 
 // 弹窗最大显示尺寸占画布的比例（相对画布宽高，手机上会自动变小）
@@ -65,7 +67,7 @@ function loadImage(src) {
       img.src = src;
     };
     img.src = src.startsWith("assets/")
-      ? src.replace("assets/", "assets/optimized/").replace(/\.(gif|jpg|png)$/i, ".webp") + "?v=24"
+      ? src.replace("assets/", "assets/optimized/").replace(/\.(gif|jpe?g|png)$/i, ".webp") + "?v=24"
       : src;
   });
 }
