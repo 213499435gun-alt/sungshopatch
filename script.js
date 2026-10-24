@@ -105,69 +105,84 @@ function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// ===== 生成随机位置（优先四角/边缘，逐渐向中间，且避开中央播放器）=====
-// 注意：弹窗的 left/top 是画布内的逻辑坐标（未受 transform 影响），
-// 所以这里必须用逻辑尺寸（offsetWidth/offsetLeft），不好愤怒能用 getBoundingClientRect。
-function randomPosition(w, h) {
+// 使用画布逻辑坐标，兼容竖屏旋转后的触摸位置。
+function randomPosition(w, h, movingPopup = null) {
   const desktop = document.getElementById("desktop");
-  const areaW = desktop ? desktop.offsetWidth : 1280;
-  const areaH = desktop ? desktop.offsetHeight : 720;
+  const areaW = desktop.offsetWidth;
+  const areaH = desktop.offsetHeight;
   const margin = 10;
-  const maxX = areaW - w - margin;
-  const maxY = areaH - h - 50; // 留出任务栏
-
-  // 播放器在画布内是居中的，用逻辑坐标算出它的区域
+  const maxX = Math.max(margin, areaW - w - margin);
+  const maxY = Math.max(margin, areaH - h - 50);
+  const corners = [
+    { x: margin, y: margin }, { x: maxX, y: maxY },
+    { x: maxX, y: margin }, { x: margin, y: maxY },
+  ];
+  // 播放键居于封面中央；逐层累加偏移，包含播放器的居中变换。
   const player = document.getElementById("player");
-  let avoid = null;
-  if (player) {
-    const pw = player.offsetWidth;
-    const ph = player.offsetHeight;
-    const pl = (areaW - pw) / 2;
-    const pt = (areaH - ph) / 2;
-    avoid = { left: pl, top: pt, right: pl + pw, bottom: pt + ph };
+  const cover = document.getElementById("videoCover");
+  let coverY = 0;
+  for (let node = cover; node && node !== player; node = node.offsetParent) coverY += node.offsetTop;
+  const centerX = areaW / 2;
+  const centerY = (areaH - player.offsetHeight) / 2 + coverY + cover.offsetHeight / 2;
+  const avoid = { x: centerX - 48, y: centerY - 48, w: 96, h: 96 };
+  const overlap = (a, b) => Math.max(0, Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x))
+    * Math.max(0, Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y));
+  const existing = [...popupLayer.querySelectorAll(".ad-popup")]
+    .filter(p => p !== movingPopup)
+    .map(p => ({ x: parseFloat(p.style.left), y: parseFloat(p.style.top), w: p.offsetWidth, h: p.offsetHeight }));
+  // 前四个固定占据不同角落，然后选择重叠面积最小的边缘位置。
+  if (!movingPopup && popupCount < 4 && !overlap({ ...corners[popupCount], w, h }, avoid)) {
+    return corners[popupCount];
   }
-
-  function overlaps(x, y) {
-    if (!avoid) return false;
-    return (
-      x < avoid.right &&
-      x + w > avoid.left &&
-      y < avoid.bottom &&
-      y + h > avoid.top
-    );
+  const candidates = corners.slice();
+  for (let i = 1; i < 12; i++) {
+    const t = i / 12;
+    candidates.push({x: margin + (maxX-margin)*t, y: margin},
+      {x: margin + (maxX-margin)*t, y: maxY},
+      {x: margin, y: margin + (maxY-margin)*t},
+      {x: maxX, y: margin + (maxY-margin)*t});
   }
-
-  // 画布中心
-  const cx = areaW / 2;
-  const cy = areaH / 2;
-  // 到中心的最大可能距离（用于归一化）
-  const maxDist = Math.sqrt(cx * cx + cy * cy);
-
-  // 生成候选点，选"离中心最远"的（即最靠边/角的），同时避开播放器
-  let best = null;
-  let bestScore = -1;
-  for (let i = 0; i < 30; i++) {
-    const x = randInt(margin, Math.max(margin, maxX));
-    const y = randInt(margin, Math.max(margin, maxY));
-    if (overlaps(x, y)) continue;
-    // 弹窗中心到画布中心的距离
-    const px = x + w / 2;
-    const py = y + h / 2;
-    const dist = Math.sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy));
-    // 归一化距离 + 少量随机，避免每次都固定同一角
-    const score = dist / maxDist + Math.random() * 0.15;
-    if (score > bestScore) {
-      bestScore = score;
-      best = { x, y };
-    }
+  let best = candidates[0], bestScore = Infinity;
+  for (const point of candidates) {
+    const rect = { ...point, w, h };
+    const score = overlap(rect, avoid) * 10000
+      + existing.reduce((sum, other) => sum + overlap(rect, other), 0);
+    if (score < bestScore) { best = point; bestScore = score; }
   }
-  if (best) return best;
+  return best;
+}
 
-  // 兜底：所有候选都重叠播放器，就返回随机位置
-  return {
-    x: randInt(margin, Math.max(margin, maxX)),
-    y: randInt(margin, Math.max(margin, maxY)),
-  };
+// 短促的系统错误提示音：现场合成，无音频下载。
+let audioContext;
+function unlockAudio() {
+  try {
+    const Audio = window.AudioContext || window.webkitAudioContext;
+    if (!Audio) return;
+    audioContext ||= new Audio();
+    if (audioContext.state === "suspended") audioContext.resume().catch(() => {});
+  } catch (_) {}
+}
+function playErrorSound() {
+  if (!audioContext) return;
+  if (audioContext.state === "suspended") {
+    audioContext.resume().then(playErrorSound).catch(() => {});
+    return;
+  }
+  if (audioContext.state !== "running") return;
+  const now = audioContext.currentTime;
+  [440, 554.37, 659.25].forEach((frequency, i) => {
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(frequency, now);
+    oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.93, now + 0.22);
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.065 / (i + 1), now + 0.006);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+    oscillator.connect(gain); gain.connect(audioContext.destination);
+    oscillator.start(now); oscillator.stop(now + 0.3);
+    oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+  });
 }
 
 // ===== 创建广告弹窗 =====
@@ -250,6 +265,7 @@ function buildPopup(imgSrc, title) {
 
   popupLayer.appendChild(popup);
   popupCount++;
+  playErrorSound();
 }
 
 // ===== 把弹窗移动到新位置 =====
@@ -257,7 +273,7 @@ function movePopup(popup) {
   // 用弹窗当前实际尺寸，避免图片加载后尺寸变化导致定位不准
   const w = popup.offsetWidth;
   const h = popup.offsetHeight;
-  const { x, y } = randomPosition(w, h);
+  const { x, y } = randomPosition(w, h, popup);
   popup.style.left = x + "px";
   popup.style.top = y + "px";
 
@@ -270,6 +286,7 @@ function movePopup(popup) {
 
 // ===== 点击播放按钮 =====
 playBtn.addEventListener("click", () => {
+  unlockAudio();
   createAdPopup();
 });
 
